@@ -7,7 +7,6 @@ import Results from "./pages/Results";
 function App() {
 
   return (
-
     <BrowserRouter>
 
       <Routes>
@@ -19,9 +18,7 @@ function App() {
       </Routes>
 
     </BrowserRouter>
-
   );
-
 }
 
 
