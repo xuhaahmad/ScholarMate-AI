@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Profile from "./pages/Profile";
 import Results from "./pages/Results";
-
+import Home from "./pages/Home";
 import ScholarshipDetails from "./pages/ScholarshipDetails";
 function App() {
 
@@ -16,7 +16,9 @@ function App() {
   element={<ScholarshipDetails />} 
 />
 
-        <Route path="/" element={<Profile />} />
+       <Route path="/" element={<Home />} />
+
+<Route path="/profile" element={<Profile />} />
 
         <Route path="/results" element={<Results />} />
 
