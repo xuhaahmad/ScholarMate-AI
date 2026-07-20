@@ -3,6 +3,7 @@ import { Brain, Globe, Target, ArrowRight, GraduationCap } from "lucide-react";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { motion } from "framer-motion";
 
 
 function Home() {
@@ -28,6 +29,7 @@ function Home() {
 
             {/* Hero Section */}
 
+
             <section className="
             bg-primary
             text-white
@@ -37,21 +39,41 @@ function Home() {
                 <div className="
                 max-w-6xl
                 mx-auto
-                px-6
-                py-24
+                px-4
+                sm:px-6
+                py-20
+                md:py-24
                 grid
                 md:grid-cols-2
-                gap-16
+                gap-10
+                md:gap-16
                 items-center
                 ">
-
 
 
 
                     {/* Left Content */}
 
 
-                    <div>
+                    <motion.div
+
+                        initial={{
+                            opacity:0,
+                            x:-40
+                        }}
+
+                        animate={{
+                            opacity:1,
+                            x:0
+                        }}
+
+                        transition={{
+                            duration:0.7,
+                            ease:"easeOut"
+                        }}
+
+                    >
+
 
 
                         <div className="
@@ -79,7 +101,8 @@ function Home() {
 
 
                         <h1 className="
-                        text-5xl
+                        text-4xl
+                        sm:text-5xl
                         md:text-6xl
                         font-bold
                         leading-tight
@@ -103,7 +126,8 @@ function Home() {
 
                         <p className="
                         mt-6
-                        text-lg
+                        text-base
+                        sm:text-lg
                         text-white/80
                         max-w-xl
                         leading-relaxed
@@ -125,6 +149,7 @@ function Home() {
 
                         <button
 
+
                             onClick={() => navigate("/profile")}
 
 
@@ -132,8 +157,10 @@ function Home() {
                             mt-8
                             bg-white
                             text-primary
-                            px-8
-                            py-4
+                            px-6
+                            sm:px-8
+                            py-3
+                            sm:py-4
                             rounded-2xl
                             font-semibold
                             flex
@@ -143,19 +170,20 @@ function Home() {
                             transition
                             "
 
+
                         >
+
 
                             Start Matching
 
                             <ArrowRight size={20}/>
 
+
                         </button>
 
 
 
-                    </div>
-
-
+                    </motion.div>
 
 
 
@@ -166,10 +194,36 @@ function Home() {
                     {/* AI Preview Card */}
 
 
-                    <div className="
-                    flex
-                    justify-center
-                    ">
+
+                    <motion.div
+
+
+                        initial={{
+                            opacity:0,
+                            scale:0.9
+                        }}
+
+
+                        animate={{
+                            opacity:1,
+                            scale:1
+                        }}
+
+
+                        transition={{
+                            duration:0.7,
+                            delay:0.2,
+                            ease:"easeOut"
+                        }}
+
+
+                        className="
+                        flex
+                        justify-center
+                        "
+
+
+                    >
 
 
 
@@ -177,7 +231,8 @@ function Home() {
                         bg-white
                         text-text
                         rounded-3xl
-                        p-8
+                        p-6
+                        sm:p-8
                         w-full
                         max-w-md
                         shadow-xl
@@ -198,15 +253,19 @@ function Home() {
                                 rounded-2xl
                                 ">
 
+
                                     <GraduationCap
                                     className="text-primary"
                                     />
+
 
                                 </div>
 
 
 
+
                                 <div>
+
 
                                     <p className="
                                     text-sm
@@ -218,9 +277,11 @@ function Home() {
                                     </p>
 
 
+
                                     <h3 className="
                                     font-semibold
-                                    text-xl
+                                    text-lg
+                                    sm:text-xl
                                     ">
 
                                         Computer Science
@@ -238,24 +299,30 @@ function Home() {
 
 
 
-
                             <div className="
                             mt-8
                             space-y-4
                             ">
 
 
+
                                 <div className="
                                 flex
                                 justify-between
                                 ">
 
+
                                     <span className="text-muted">
+
                                         CGPA
+
                                     </span>
 
+
                                     <span className="font-semibold">
+
                                         3.7
+
                                     </span>
 
 
@@ -270,23 +337,26 @@ function Home() {
                                 justify-between
                                 ">
 
+
                                     <span className="text-muted">
+
                                         Country
+
                                     </span>
 
+
                                     <span className="font-semibold">
+
                                         Germany
+
                                     </span>
 
 
                                 </div>
-
 
 
 
                             </div>
-
-
 
 
 
@@ -301,6 +371,7 @@ function Home() {
                             ">
 
 
+
                                 <p className="
                                 text-primary
                                 font-medium
@@ -311,8 +382,10 @@ function Home() {
                                 </p>
 
 
+
                                 <h2 className="
-                                text-5xl
+                                text-4xl
+                                sm:text-5xl
                                 font-bold
                                 text-primary
                                 mt-2
@@ -321,6 +394,7 @@ function Home() {
                                     94%
 
                                 </h2>
+
 
 
 
@@ -334,6 +408,7 @@ function Home() {
                                 </p>
 
 
+
                             </div>
 
 
@@ -343,7 +418,7 @@ function Home() {
 
 
 
-                    </div>
+                    </motion.div>
 
 
 
@@ -363,25 +438,34 @@ function Home() {
             {/* Features */}
 
 
+
             <section className="
             max-w-6xl
             mx-auto
-            px-6
-            py-20
+            px-4
+            sm:px-6
+            py-16
+            md:py-20
             ">
 
 
 
+
                 <h2 className="
-                text-3xl
+                text-2xl
+                sm:text-3xl
                 font-bold
                 text-text
                 text-center
                 ">
 
+
                     Everything you need to find scholarships
 
+
                 </h2>
+
+
 
 
 
@@ -391,8 +475,10 @@ function Home() {
                 grid
                 md:grid-cols-3
                 gap-6
-                mt-12
+                mt-10
+                md:mt-12
                 ">
+
 
 
                     <Feature
@@ -430,12 +516,12 @@ function Home() {
                     />
 
 
-
                 </div>
 
 
 
             </section>
+
 
 
 
@@ -453,20 +539,59 @@ function Home() {
 
 
 
+
+
+
 function Feature({icon,title,text}) {
 
 
     return (
 
-        <div className="
-        bg-white
-        border
-        border-border
-        rounded-3xl
-        p-8
-        hover:bg-secondary/20
-        transition
-        ">
+
+        <motion.div
+
+
+            initial={{
+                opacity:0,
+                y:30
+            }}
+
+
+            whileInView={{
+                opacity:1,
+                y:0
+            }}
+
+
+            viewport={{
+                once:true
+            }}
+
+
+            transition={{
+                duration:0.5
+            }}
+
+
+            whileHover={{
+                y:-8
+            }}
+
+
+            className="
+            bg-white
+            border
+            border-border
+            rounded-3xl
+            p-6
+            sm:p-8
+            hover:bg-secondary/20
+            transition
+            "
+
+
+        >
+
 
 
             <div className="
@@ -476,6 +601,7 @@ function Feature({icon,title,text}) {
                 {icon}
 
             </div>
+
 
 
 
@@ -492,6 +618,7 @@ function Feature({icon,title,text}) {
 
 
 
+
             <p className="
             mt-3
             text-muted
@@ -502,11 +629,14 @@ function Feature({icon,title,text}) {
             </p>
 
 
-        </div>
+
+        </motion.div>
+
 
     );
 
 }
+
 
 
 

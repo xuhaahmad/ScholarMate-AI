@@ -6,6 +6,7 @@ import {
     Calendar,
     Sparkles
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 
 function ScholarshipCard({ scholarship }) {
@@ -14,37 +15,70 @@ function ScholarshipCard({ scholarship }) {
     const navigate = useNavigate();
 
 
-
     return (
 
-        <div className="
-        bg-white
-        rounded-3xl
-        border
-        border-border
-        p-8
-        shadow-sm
-        hover:shadow-xl
-        transition
-        duration-300
-        ">
+
+        <motion.div
+
+
+            initial={{
+                opacity:0,
+                y:40
+            }}
+
+
+            whileInView={{
+                opacity:1,
+                y:0
+            }}
+
+
+            viewport={{
+                once:true
+            }}
+
+
+            transition={{
+                duration:0.5
+            }}
+
+
+            whileHover={{
+                y:-6
+            }}
+
+
+            className="
+            bg-white
+            rounded-3xl
+            border
+            border-border
+            p-5
+            sm:p-8
+            shadow-sm
+            hover:shadow-xl
+            transition-all
+            duration-300
+            "
+
+
+        >
 
 
 
+            {/* Header */}
 
-
-            {/* Top Section */}
 
             <div className="
             flex
+            flex-col
+            sm:flex-row
             justify-between
-            items-start
-            gap-6
+            gap-5
             ">
 
 
-
-                <div>
+                <div className="flex-1">
 
 
                     {
@@ -59,7 +93,8 @@ function ScholarshipCard({ scholarship }) {
                             px-3
                             py-1
                             rounded-full
-                            text-sm
+                            text-xs
+                            sm:text-sm
                             font-medium
                             ">
 
@@ -72,12 +107,13 @@ function ScholarshipCard({ scholarship }) {
 
 
 
-
                     <h2 className="
-                    text-3xl
+                    text-2xl
+                    sm:text-3xl
                     font-bold
                     text-text
                     mt-4
+                    break-words
                     ">
 
                         {scholarship.name}
@@ -87,11 +123,13 @@ function ScholarshipCard({ scholarship }) {
 
 
                     <p className="
-                    text-muted
-                    mt-2
                     flex
                     items-center
                     gap-2
+                    text-muted
+                    mt-2
+                    text-sm
+                    sm:text-base
                     ">
 
                         <GraduationCap size={18}/>
@@ -101,16 +139,13 @@ function ScholarshipCard({ scholarship }) {
                     </p>
 
 
-
                 </div>
 
 
 
 
 
-
-
-                {/* Score */}
+                {/* Match Score */}
 
 
                 <div className="
@@ -118,13 +153,17 @@ function ScholarshipCard({ scholarship }) {
                 text-primary
                 rounded-2xl
                 px-5
-                py-4
+                py-3
                 text-center
+                self-start
+                w-full
+                sm:w-auto
                 ">
 
 
                     <p className="
-                    text-3xl
+                    text-2xl
+                    sm:text-3xl
                     font-bold
                     ">
 
@@ -133,9 +172,7 @@ function ScholarshipCard({ scholarship }) {
                     </p>
 
 
-                    <p className="
-                    text-sm
-                    ">
+                    <p className="text-sm">
 
                         Match
 
@@ -145,10 +182,7 @@ function ScholarshipCard({ scholarship }) {
                 </div>
 
 
-
             </div>
-
-
 
 
 
@@ -160,9 +194,11 @@ function ScholarshipCard({ scholarship }) {
 
 
             <p className="
-            mt-6
+            mt-5
             text-muted
             leading-relaxed
+            text-sm
+            sm:text-base
             ">
 
                 {scholarship.description}
@@ -176,33 +212,32 @@ function ScholarshipCard({ scholarship }) {
 
 
 
-            {/* Info Tags */}
+            {/* Tags */}
 
 
             <div className="
             flex
             flex-wrap
-            gap-3
+            gap-2
             mt-6
             ">
 
 
-
                 <Tag
-                icon={<MapPin size={16}/>}
-                text={scholarship.country}
+                    icon={<MapPin size={15}/>}
+                    text={scholarship.country}
                 />
 
 
                 <Tag
-                icon={<Wallet size={16}/>}
-                text={scholarship.funding}
+                    icon={<Wallet size={15}/>}
+                    text={scholarship.funding}
                 />
 
 
                 <Tag
-                icon={<Calendar size={16}/>}
-                text={scholarship.deadline}
+                    icon={<Calendar size={15}/>}
+                    text={scholarship.deadline}
                 />
 
 
@@ -220,12 +255,11 @@ function ScholarshipCard({ scholarship }) {
 
 
             <div className="
-            mt-8
+            mt-7
             bg-background
             rounded-2xl
-            p-6
+            p-5
             ">
-
 
 
                 <div className="
@@ -238,8 +272,8 @@ function ScholarshipCard({ scholarship }) {
 
 
                     <Sparkles
-                    size={20}
-                    className="text-primary"
+                        size={20}
+                        className="text-primary"
                     />
 
 
@@ -250,31 +284,25 @@ function ScholarshipCard({ scholarship }) {
 
 
 
-
-
-
                 <ul className="
                 mt-4
                 space-y-3
                 text-muted
+                text-sm
                 ">
 
 
                     {
                         scholarship.reasons.map(
-
                             (reason,index)=>(
 
-                                <li
-                                key={index}
-                                >
+                                <li key={index}>
 
                                     ✓ {reason}
 
                                 </li>
 
                             )
-
                         )
                     }
 
@@ -283,7 +311,6 @@ function ScholarshipCard({ scholarship }) {
 
 
             </div>
-
 
 
 
@@ -309,7 +336,7 @@ function ScholarshipCard({ scholarship }) {
 
 
                 className="
-                mt-8
+                mt-7
                 w-full
                 bg-primary
                 hover:bg-primaryDark
@@ -317,9 +344,10 @@ function ScholarshipCard({ scholarship }) {
                 py-4
                 rounded-2xl
                 font-semibold
-                transition
+                transition-all
                 hover:scale-[1.02]
                 "
+
 
             >
 
@@ -329,12 +357,13 @@ function ScholarshipCard({ scholarship }) {
 
 
 
-        </div>
+
+        </motion.div>
+
 
     );
 
 }
-
 
 
 
@@ -352,19 +381,25 @@ function Tag({icon,text}) {
         gap-2
         bg-secondary
         text-primary
-        px-4
+        px-3
         py-2
         rounded-full
-        text-sm
+        text-xs
+        sm:text-sm
         ">
+
 
             {icon}
 
-            {text}
+            <span>
+                {text}
+            </span>
+
 
         </div>
 
     );
+
 
 }
 

@@ -22,15 +22,18 @@ function Navbar() {
             <div className="
             max-w-6xl
             mx-auto
-            px-6
-            py-6
+            px-4
+            sm:px-6
+            py-5
             flex
             justify-between
             items-center
+            gap-4
             ">
 
 
                 {/* Logo */}
+
 
                 <div className="
                 flex
@@ -38,13 +41,20 @@ function Navbar() {
                 gap-2
                 text-white
                 font-bold
-                text-2xl
+                text-xl
+                sm:text-2xl
                 ">
 
 
-                    <Sparkles size={26}/>
+                    <Sparkles 
+                    size={22}
+                    className="sm:w-6 sm:h-6"
+                    />
 
-                    ScholarMate AI
+
+                    <span>
+                        ScholarMate AI
+                    </span>
 
 
                 </div>
@@ -64,12 +74,17 @@ function Navbar() {
                     className="
                     bg-white
                     text-primary
-                    px-6
-                    py-3
+                    px-4
+                    sm:px-6
+                    py-2
+                    sm:py-3
                     rounded-2xl
+                    text-sm
+                    sm:text-base
                     font-semibold
                     hover:scale-105
                     transition
+                    whitespace-nowrap
                     "
 
                 >

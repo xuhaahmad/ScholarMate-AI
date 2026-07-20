@@ -5,8 +5,11 @@ import {
     Calendar,
     GraduationCap,
     Sparkles,
-    ArrowLeft
+    ArrowLeft,
+    ExternalLink
 } from "lucide-react";
+
+import { motion } from "framer-motion";
 
 
 function ScholarshipDetails() {
@@ -30,15 +33,18 @@ function ScholarshipDetails() {
             flex
             items-center
             justify-center
+            px-6
             ">
+
 
                 <div className="
                 bg-white
-                p-10
                 rounded-3xl
-                shadow
+                p-10
                 text-center
+                shadow-xl
                 ">
+
 
                     <h2 className="
                     text-2xl
@@ -83,20 +89,17 @@ function ScholarshipDetails() {
 
 
 
-
     return (
 
 
         <div className="
         min-h-screen
         bg-background
-        px-6
-        py-12
+        px-4
+        sm:px-6
+        py-10
         ">
 
-
-
-            {/* Back Button */}
 
 
             <button
@@ -129,23 +132,43 @@ function ScholarshipDetails() {
             {/* Hero */}
 
 
-            <section className="
+            <motion.section
+
+            initial={{
+                opacity:0,
+                y:-30
+            }}
+
+            animate={{
+                opacity:1,
+                y:0
+            }}
+
+            transition={{
+                duration:0.6
+            }}
+
+            className="
             max-w-5xl
             mx-auto
             mt-8
             bg-primary
             text-white
             rounded-3xl
-            p-10
-            ">
+            p-6
+            sm:p-10
+            shadow-xl
+            "
 
+            >
 
 
                 <div className="
                 flex
+                flex-col
+                md:flex-row
                 justify-between
-                items-start
-                gap-5
+                gap-8
                 ">
 
 
@@ -177,17 +200,16 @@ function ScholarshipDetails() {
 
 
                         <h1 className="
-                        text-4xl
-                        md:text-5xl
+                        text-3xl
+                        sm:text-5xl
                         font-bold
                         mt-6
                         ">
 
-
                             {scholarship.name}
 
-
                         </h1>
+
 
 
 
@@ -202,7 +224,6 @@ function ScholarshipDetails() {
 
 
                             <GraduationCap size={18}/>
-
 
                             {scholarship.university}
 
@@ -221,15 +242,16 @@ function ScholarshipDetails() {
                     <div className="
                     bg-white
                     text-primary
-                    rounded-2xl
-                    px-6
-                    py-5
+                    rounded-3xl
+                    px-8
+                    py-6
                     text-center
+                    self-start
                     ">
 
 
                         <p className="
-                        text-4xl
+                        text-5xl
                         font-bold
                         ">
 
@@ -238,9 +260,11 @@ function ScholarshipDetails() {
                         </p>
 
 
-                        <p className="text-sm">
+                        <p className="
+                        text-sm
+                        ">
 
-                            Match
+                            Match Score
 
                         </p>
 
@@ -253,9 +277,7 @@ function ScholarshipDetails() {
                 </div>
 
 
-
-            </section>
-
+            </motion.section>
 
 
 
@@ -263,8 +285,6 @@ function ScholarshipDetails() {
 
 
 
-
-            {/* Content */}
 
 
             <div className="
@@ -278,9 +298,6 @@ function ScholarshipDetails() {
 
 
 
-
-
-                {/* Main */}
 
 
                 <div className="
@@ -312,7 +329,8 @@ function ScholarshipDetails() {
 
 
 
-                    <Section title="Why AI recommends this">
+
+                    <Section title="Why ScholarMate AI recommends this">
 
 
                         <ul className="
@@ -345,7 +363,6 @@ function ScholarshipDetails() {
 
 
 
-
                 </div>
 
 
@@ -355,10 +372,24 @@ function ScholarshipDetails() {
 
 
 
-                {/* Sidebar */}
 
+                <motion.div
 
-                <div>
+                initial={{
+                    opacity:0,
+                    x:30
+                }}
+
+                animate={{
+                    opacity:1,
+                    x:0
+                }}
+
+                transition={{
+                    duration:0.6
+                }}
+
+                >
 
 
                     <div className="
@@ -367,44 +398,30 @@ function ScholarshipDetails() {
                     border
                     border-border
                     p-6
-                    space-y-5
+                    space-y-6
+                    shadow-sm
                     ">
 
 
                         <Info
-
                         icon={<MapPin/>}
-
                         label="Country"
-
                         value={scholarship.country}
-
                         />
 
 
-
                         <Info
-
                         icon={<Wallet/>}
-
                         label="Funding"
-
                         value={scholarship.funding}
-
                         />
-
 
 
                         <Info
-
                         icon={<Calendar/>}
-
                         label="Deadline"
-
                         value={scholarship.deadline}
-
                         />
-
 
 
                     </div>
@@ -413,36 +430,41 @@ function ScholarshipDetails() {
 
 
 
-
                     <button
 
-                        className="
-                        w-full
-                        mt-6
-                        bg-primary
-                        hover:bg-primaryDark
-                        text-white
-                        py-4
-                        rounded-2xl
-                        font-semibold
-                        transition
-                        "
+                    className="
+                    w-full
+                    mt-6
+                    bg-primary
+                    hover:bg-primaryDark
+                    text-white
+                    py-4
+                    rounded-2xl
+                    font-semibold
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    transition
+                    hover:scale-[1.02]
+                    "
 
                     >
 
-                        Visit Official Website →
+                        Visit Official Website
+
+                        <ExternalLink size={18}/>
 
                     </button>
 
 
 
-                </div>
+                </motion.div>
 
 
 
 
             </div>
-
 
 
         </div>
@@ -468,7 +490,8 @@ function Section({title,children}) {
         rounded-3xl
         border
         border-border
-        p-8
+        p-6
+        sm:p-8
         ">
 
 
@@ -499,6 +522,7 @@ function Section({title,children}) {
 
 
 
+
 function Info({icon,label,value}) {
 
 
@@ -506,7 +530,7 @@ function Info({icon,label,value}) {
 
         <div className="
         flex
-        gap-3
+        gap-4
         items-center
         ">
 

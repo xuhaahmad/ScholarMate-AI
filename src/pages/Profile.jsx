@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { User, BookOpen, BarChart3, Globe, Wallet } from "lucide-react";
-
 import InputField from "../components/InputField";
-
 import React from "react";
+
+
 function Profile() {
 
 
@@ -20,6 +20,7 @@ function Profile() {
         funding: ""
 
     });
+
 
 
 
@@ -68,16 +69,21 @@ function Profile() {
 
 
 
+
             {/* Header */}
+
 
 
             <section className="
             bg-primary
             text-white
-            px-6
-            py-20
+            px-4
+            sm:px-6
+            py-16
+            sm:py-20
             text-center
             ">
+
 
 
                 <div className="
@@ -86,49 +92,73 @@ function Profile() {
                 ">
 
 
+
+
                     <div className="
                     flex
                     justify-center
                     ">
 
+
                         <div className="
                         bg-white/20
-                        p-4
+                        p-3
+                        sm:p-4
                         rounded-2xl
                         ">
 
-                            <User size={35}/>
+
+                            <User 
+                            size={30}
+                            className="sm:w-9 sm:h-9"
+                            />
+
 
                         </div>
+
 
                     </div>
 
 
 
 
+
+
                     <h1 className="
-                    text-4xl
+                    text-3xl
+                    sm:text-4xl
                     md:text-5xl
                     font-bold
                     mt-6
                     ">
 
+
                         Tell Us About Yourself
 
+
                     </h1>
+
+
+
 
 
 
                     <p className="
                     mt-4
                     text-white/80
-                    text-lg
+                    text-base
+                    sm:text-lg
+                    max-w-xl
+                    mx-auto
                     ">
+
 
                         Build your profile and let ScholarMate AI
                         find opportunities made for you.
 
+
                     </p>
+
 
 
                 </div>
@@ -142,27 +172,40 @@ function Profile() {
 
 
 
+
+
             {/* Form */}
+
 
 
             <form
 
+
                 onSubmit={handleSubmit}
 
+
                 className="
+                w-[calc(100%-2rem)]
+                sm:w-full
                 max-w-xl
                 mx-auto
-                -mt-10
+                -mt-8
+                sm:-mt-10
                 bg-white
                 rounded-3xl
-                p-8
+                p-6
+                sm:p-8
                 md:p-10
                 shadow-xl
-                space-y-6
+                space-y-5
+                sm:space-y-6
                 "
 
 
+
             >
+
+
 
 
 
@@ -182,6 +225,8 @@ function Profile() {
                     onChange={handleChange}
 
                 />
+
+
 
 
 
@@ -208,6 +253,8 @@ function Profile() {
 
 
 
+
+
                 <InputField
 
                     icon={<BarChart3 size={18}/>}
@@ -223,6 +270,8 @@ function Profile() {
                     onChange={handleChange}
 
                 />
+
+
 
 
 
@@ -252,6 +301,8 @@ function Profile() {
 
 
 
+
+
                 <InputField
 
                     icon={<Wallet size={18}/>}
@@ -274,30 +325,42 @@ function Profile() {
 
 
 
+
+
+
                 <button
+
 
                     className="
                     w-full
                     bg-primary
                     hover:bg-primaryDark
                     text-white
-                    py-4
+                    py-3
+                    sm:py-4
                     rounded-2xl
                     font-semibold
-                    text-lg
+                    text-base
+                    sm:text-lg
                     transition
                     hover:scale-[1.02]
                     "
 
+
                 >
 
+
                     Find My Scholarships →
+
 
                 </button>
 
 
 
+
+
             </form>
+
 
 
 
@@ -308,6 +371,7 @@ function Profile() {
     );
 
 }
+
 
 
 export default Profile;
