@@ -1,3 +1,4 @@
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/)
 # 🎓 ScholarMate AI
 
 ScholarMate AI is a modern web application that helps students discover scholarships based on their academic profile. It analyzes user preferences and recommends scholarships using a personalized matching algorithm.
@@ -21,9 +22,6 @@ ScholarMate AI is a modern web application that helps students discover scholars
 - Framer Motion
 - Lucide React
 
-## 📸 Screenshots
-
-![alt text](image.png)
 
 ## 🚀 Live Demo
 
