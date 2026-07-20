@@ -13,40 +13,91 @@ function ScholarshipCard({ scholarship }) {
 
         <div className="
         bg-white
-        p-8
+        border
+        border-secondary
+        p-7
         rounded-3xl
-        shadow-lg
+        shadow-sm
         hover:shadow-xl
-        transition
+        transition-all
+        duration-300
         ">
 
 
-            {
-                scholarship.score >= 80 && (
 
-                    <Badge>
-                        ⭐ Best Match
-                    </Badge>
+            {/* Header */}
 
-                )
-            }
-
-
-
-            <h2 className="
-            text-3xl
-            font-bold
-            mt-5
+            <div className="
+            flex
+            justify-between
+            items-start
+            gap-4
             ">
 
-                {scholarship.name}
 
-            </h2>
-
+                <div>
 
 
+                    {
+                        scholarship.score >= 80 && (
 
-            <p className="mt-4 text-muted">
+                            <Badge>
+
+                                ⭐ Best Match
+
+                            </Badge>
+
+                        )
+                    }
+
+
+
+                    <h2 className="
+                    text-2xl
+                    font-bold
+                    text-text
+                    mt-4
+                    ">
+
+                        {scholarship.name}
+
+                    </h2>
+
+
+                </div>
+
+
+
+
+
+                <div className="
+                bg-secondary
+                text-primary
+                px-4
+                py-2
+                rounded-2xl
+                font-bold
+                whitespace-nowrap
+                ">
+
+                    {scholarship.score}% Match
+
+                </div>
+
+
+            </div>
+
+
+
+
+
+            {/* Description */}
+
+            <p className="
+            mt-5
+            text-muted
+            leading-relaxed
+            ">
 
                 {scholarship.description}
 
@@ -54,6 +105,9 @@ function ScholarshipCard({ scholarship }) {
 
 
 
+
+
+            {/* Main Details */}
 
             <div className="
             flex
@@ -64,17 +118,17 @@ function ScholarshipCard({ scholarship }) {
 
 
                 <Badge>
+
                     🌍 {scholarship.country}
+
                 </Badge>
 
 
+
                 <Badge>
+
                     💰 {scholarship.funding}
-                </Badge>
 
-
-                <Badge>
-                    📅 {scholarship.deadline}
                 </Badge>
 
 
@@ -83,31 +137,169 @@ function ScholarshipCard({ scholarship }) {
 
 
 
+
+            {/* Extra Info */}
+
+            <div className="
+            mt-5
+            text-sm
+            text-muted
+            space-y-1
+            ">
+
+
+                <p>
+
+                    🏫 {scholarship.university}
+
+                </p>
+
+
+                <p>
+
+                    📅 Deadline: {scholarship.deadline}
+
+                </p>
+
+
+            </div>
+
+
+
+
+
+
+            {/* AI Insight */}
+
+            <div className="
+            mt-6
+            bg-background
+            p-4
+            rounded-2xl
+            ">
+
+
+                <h3 className="
+                font-semibold
+                text-text
+                ">
+
+                    ✨ AI Insight
+
+                </h3>
+
+
+
+                <p className="
+                mt-2
+                text-sm
+                text-muted
+                ">
+
+                    {scholarship.reasons[0]}
+
+                </p>
+
+
+            </div>
+
+
+
+
+
+            {/* Compatibility Bar */}
+
+            <div className="mt-6">
+
+
+                <div className="
+                flex
+                justify-between
+                text-sm
+                mb-2
+                ">
+
+
+                    <span className="text-muted">
+
+                        Compatibility
+
+                    </span>
+
+
+                    <span className="font-medium text-primary">
+
+                        {scholarship.score}%
+
+                    </span>
+
+
+                </div>
+
+
+
+                <div className="
+                w-full
+                bg-gray-200
+                rounded-full
+                h-2
+                ">
+
+
+                    <div
+
+                        className="
+                        bg-primary
+                        h-2
+                        rounded-full
+                        "
+
+                        style={{
+                            width:`${scholarship.score}%`
+                        }}
+
+                    ></div>
+
+
+                </div>
+
+
+            </div>
+
+
+
+
+
+
             <button
 
                 onClick={() =>
-
                     navigate(
                         "/scholarship-details",
                         {
                             state: scholarship
                         }
                     )
-
                 }
 
+
                 className="
-                mt-6
+                mt-7
+                w-full
                 bg-primary
+                hover:bg-primaryDark
+                hover:scale-[1.02]
                 text-white
-                px-6
                 py-3
-                rounded-xl
+                rounded-2xl
+                font-semibold
+                transition
+                shadow-md
                 "
 
             >
 
-                View Details →
+                View Full Details →
 
             </button>
 

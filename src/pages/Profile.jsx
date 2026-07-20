@@ -2,9 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import InputField from "../components/InputField";
 
+
 function Profile() {
 
+
     const navigate = useNavigate();
+
 
 
     const [profile, setProfile] = useState({
@@ -16,6 +19,8 @@ function Profile() {
         funding: ""
 
     });
+
+
 
 
 
@@ -33,6 +38,8 @@ function Profile() {
 
 
 
+
+
     function handleSubmit(e) {
 
         e.preventDefault();
@@ -44,21 +51,39 @@ function Profile() {
 
         });
 
+
     }
+
+
 
 
 
     return (
 
-        <div className="min-h-screen bg-background px-6 py-12">
+        <div className="
+        min-h-screen
+        bg-background
+        px-6
+        py-14
+        ">
 
 
-            {/* Header */}
+            <div className="
+            max-w-3xl
+            mx-auto
+            text-center
+            ">
 
-            <div className="text-center max-w-2xl mx-auto">
 
-
-                <div className="inline-block bg-secondary px-5 py-2 rounded-full text-primary font-medium">
+                <div className="
+                inline-flex
+                bg-secondary
+                text-primary
+                px-5
+                py-2
+                rounded-full
+                font-medium
+                ">
 
                     🎓 Student Profile
 
@@ -66,7 +91,13 @@ function Profile() {
 
 
 
-                <h1 className="text-5xl font-bold mt-6 text-text">
+
+                <h1 className="
+                text-5xl
+                font-bold
+                mt-6
+                text-text
+                ">
 
                     Tell Us About Yourself
 
@@ -74,10 +105,15 @@ function Profile() {
 
 
 
-                <p className="mt-4 text-muted text-lg">
 
-                    Help ScholarMate AI understand your goals and
-                    find scholarships that match your profile.
+                <p className="
+                mt-4
+                text-lg
+                text-muted
+                ">
+
+                    We'll analyze your profile and find scholarships
+                    that match your goals.
 
                 </p>
 
@@ -87,22 +123,25 @@ function Profile() {
 
 
 
-            {/* Form Card */}
+
+
 
             <form
 
                 onSubmit={handleSubmit}
 
                 className="
-        max-w-xl
-        mx-auto
-        mt-12
-        bg-white
-        p-10
-        rounded-3xl
-        shadow-xl
-        space-y-6
-        "
+                max-w-xl
+                mx-auto
+                mt-12
+                bg-white
+                p-10
+                rounded-3xl
+                shadow-xl
+                border
+                border-secondary
+                space-y-6
+                "
 
 
             >
@@ -110,6 +149,8 @@ function Profile() {
 
 
                 <InputField
+
+                    icon="👤"
 
                     label="Full Name"
 
@@ -128,6 +169,8 @@ function Profile() {
 
                 <InputField
 
+                    icon="💻"
+
                     label="Academic Field"
 
                     name="field"
@@ -143,8 +186,9 @@ function Profile() {
 
 
 
-
                 <InputField
+
+                    icon="📊"
 
                     label="CGPA"
 
@@ -164,6 +208,8 @@ function Profile() {
 
                 <InputField
 
+                    icon="🌍"
+
                     label="Preferred Country"
 
                     name="country"
@@ -180,8 +226,9 @@ function Profile() {
 
 
 
-
                 <InputField
+
+                    icon="💰"
 
                     label="Funding Preference"
 
@@ -199,20 +246,22 @@ function Profile() {
 
 
 
+
                 <button
 
                     className="
-          w-full
-          bg-primary
-          hover:bg-primaryDark
-          text-white
-          py-4
-          rounded-2xl
-          font-semibold
-          text-lg
-          shadow-lg
-          transition
-          "
+                    w-full
+                    bg-primary
+                    hover:bg-primaryDark
+                    hover:scale-[1.02]
+                    text-white
+                    py-4
+                    rounded-2xl
+                    font-semibold
+                    text-lg
+                    transition
+                    shadow-lg
+                    "
 
                 >
 

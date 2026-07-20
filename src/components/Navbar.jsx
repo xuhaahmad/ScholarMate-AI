@@ -1,55 +1,87 @@
 import { useNavigate } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 
 
 function Navbar() {
 
+
     const navigate = useNavigate();
+
 
 
     return (
 
         <nav className="
-        flex
-        justify-between
-        items-center
-        px-8
-        py-5
-        bg-white
-        shadow-sm
+        absolute
+        top-0
+        w-full
+        z-50
         ">
 
 
-            <h1 className="
-            text-2xl
-            font-bold
-            text-primary
+            <div className="
+            max-w-6xl
+            mx-auto
+            px-6
+            py-6
+            flex
+            justify-between
+            items-center
             ">
 
-                ScholarMate AI 🎓
 
-            </h1>
+                {/* Logo */}
 
-
-
-            <button
-
-                onClick={() => navigate("/profile")}
-
-                className="
-                bg-primary
-                hover:bg-primaryDark
+                <div className="
+                flex
+                items-center
+                gap-2
                 text-white
-                px-6
-                py-3
-                rounded-xl
-                transition
-                "
+                font-bold
+                text-2xl
+                ">
 
-            >
 
-                Find Scholarships
+                    <Sparkles size={26}/>
 
-            </button>
+                    ScholarMate AI
+
+
+                </div>
+
+
+
+
+
+                {/* Button */}
+
+
+                <button
+
+                    onClick={() => navigate("/profile")}
+
+
+                    className="
+                    bg-white
+                    text-primary
+                    px-6
+                    py-3
+                    rounded-2xl
+                    font-semibold
+                    hover:scale-105
+                    transition
+                    "
+
+                >
+
+                    Get Started 🚀
+
+
+                </button>
+
+
+
+            </div>
 
 
         </nav>

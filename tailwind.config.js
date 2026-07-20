@@ -8,14 +8,24 @@ export default {
 
   theme: {
     extend: {
-      colors: {
-        primary: "#4F6F52",
-        primaryDark: "#3A5A40",
-        secondary: "#D8E8D2",
-        background: "#F8FAF5",
-        text: "#1F2937",
-        muted: "#64748B",
-      },
+colors: {
+  primary: "#486A5A",
+  primaryDark: "#355145",
+
+  secondary: "#E4F0E7",
+
+  background: "#F7F8F5",
+
+  surface: "#FFFFFF",
+
+  text: "#1F2933",
+
+  muted: "#667085",
+
+  border: "#DDE7DF",
+
+  accent: "#8FB996",
+},
     },
   },
 
