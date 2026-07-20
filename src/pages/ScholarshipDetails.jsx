@@ -1,23 +1,78 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+    MapPin,
+    Wallet,
+    Calendar,
+    GraduationCap,
+    Sparkles,
+    ArrowLeft
+} from "lucide-react";
 
 
 function ScholarshipDetails() {
 
+
     const location = useLocation();
+
     const navigate = useNavigate();
 
     const scholarship = location.state;
+
 
 
     if (!scholarship) {
 
         return (
 
-            <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="
+            min-h-screen
+            bg-background
+            flex
+            items-center
+            justify-center
+            ">
 
-                <h1 className="text-3xl font-bold text-text">
-                    Scholarship not found
-                </h1>
+                <div className="
+                bg-white
+                p-10
+                rounded-3xl
+                shadow
+                text-center
+                ">
+
+                    <h2 className="
+                    text-2xl
+                    font-bold
+                    text-text
+                    ">
+
+                        Scholarship Not Found
+
+                    </h2>
+
+
+                    <button
+
+                        onClick={() => navigate("/")}
+
+                        className="
+                        mt-6
+                        bg-primary
+                        text-white
+                        px-6
+                        py-3
+                        rounded-xl
+                        "
+
+                    >
+
+                        Go Home
+
+                    </button>
+
+
+                </div>
+
 
             </div>
 
@@ -27,106 +82,133 @@ function ScholarshipDetails() {
 
 
 
+
+
     return (
 
-        <div className="min-h-screen bg-background px-6 py-12">
 
-
-            <div className="max-w-4xl mx-auto">
-
-
-                {/* Back Button */}
-
-                <button
-
-                    onClick={() => navigate(-1)}
-
-                    className="
-                    text-primary
-                    font-medium
-                    mb-8
-                    "
-
-                >
-
-                    ← Back to Results
-
-                </button>
+        <div className="
+        min-h-screen
+        bg-background
+        px-6
+        py-12
+        ">
 
 
 
+            {/* Back Button */}
 
-                {/* Main Card */}
+
+            <button
+
+                onClick={() => navigate(-1)}
+
+                className="
+                flex
+                items-center
+                gap-2
+                text-muted
+                hover:text-primary
+                transition
+                "
+
+            >
+
+                <ArrowLeft size={18}/>
+
+                Back to Results
+
+            </button>
+
+
+
+
+
+
+
+            {/* Hero */}
+
+
+            <section className="
+            max-w-5xl
+            mx-auto
+            mt-8
+            bg-primary
+            text-white
+            rounded-3xl
+            p-10
+            ">
+
+
 
                 <div className="
-                bg-white
-                rounded-3xl
-                shadow-xl
-                p-10
+                flex
+                justify-between
+                items-start
+                gap-5
                 ">
 
 
-                    <div className="flex justify-between items-start">
 
-
-                        <div>
-
-
-                            <span className="
-                            bg-secondary
-                            text-primary
-                            px-4
-                            py-2
-                            rounded-full
-                            text-sm
-                            ">
-
-                                🎓 Scholarship Opportunity
-
-                            </span>
-
-
-
-                            <h1 className="
-                            text-5xl
-                            font-bold
-                            text-text
-                            mt-6
-                            ">
-
-                                {scholarship.name}
-
-                            </h1>
-
-
-                        </div>
-
-
+                    <div>
 
 
                         <div className="
-                        bg-primary
-                        text-white
-                        px-6
-                        py-4
-                        rounded-2xl
-                        text-center
+                        inline-flex
+                        items-center
+                        gap-2
+                        bg-white/20
+                        px-4
+                        py-2
+                        rounded-full
+                        text-sm
                         ">
 
 
-                            <p className="text-3xl font-bold">
+                            <Sparkles size={16}/>
 
-                                {scholarship.score}%
-
-                            </p>
-
-
-                            <p>
-                                Match
-                            </p>
+                            AI Recommended
 
 
                         </div>
+
+
+
+
+
+                        <h1 className="
+                        text-4xl
+                        md:text-5xl
+                        font-bold
+                        mt-6
+                        ">
+
+
+                            {scholarship.name}
+
+
+                        </h1>
+
+
+
+
+                        <p className="
+                        mt-4
+                        text-white/80
+                        flex
+                        items-center
+                        gap-2
+                        ">
+
+
+                            <GraduationCap size={18}/>
+
+
+                            {scholarship.university}
+
+
+                        </p>
+
 
 
                     </div>
@@ -135,94 +217,32 @@ function ScholarshipDetails() {
 
 
 
-                    <p className="
-                    mt-8
-                    text-lg
-                    text-muted
-                    ">
-
-                        {scholarship.description}
-
-                    </p>
-
-
-
-
-
-                    {/* Details */}
 
                     <div className="
-                    grid
-                    md:grid-cols-2
-                    gap-5
-                    mt-8
+                    bg-white
+                    text-primary
+                    rounded-2xl
+                    px-6
+                    py-5
+                    text-center
                     ">
 
 
-                        <div className="bg-secondary p-5 rounded-2xl">
+                        <p className="
+                        text-4xl
+                        font-bold
+                        ">
 
-                            🌍
+                            {scholarship.score}%
 
-                            <p className="font-bold mt-2">
-                                Country
-                            </p>
-
-                            <p>
-                                {scholarship.country}
-                            </p>
-
-                        </div>
+                        </p>
 
 
+                        <p className="text-sm">
 
+                            Match
 
-                        <div className="bg-secondary p-5 rounded-2xl">
-
-                            🏫
-
-                            <p className="font-bold mt-2">
-                                University
-                            </p>
-
-                            <p>
-                                {scholarship.university}
-                            </p>
-
-                        </div>
-
-
-
-
-                        <div className="bg-secondary p-5 rounded-2xl">
-
-                            💰
-
-                            <p className="font-bold mt-2">
-                                Funding
-                            </p>
-
-                            <p>
-                                {scholarship.funding}
-                            </p>
-
-                        </div>
-
-
-
-
-                        <div className="bg-secondary p-5 rounded-2xl">
-
-                            📅
-
-                            <p className="font-bold mt-2">
-                                Deadline
-                            </p>
-
-                            <p>
-                                {scholarship.deadline}
-                            </p>
-
-                        </div>
+                        </p>
 
 
                     </div>
@@ -230,25 +250,75 @@ function ScholarshipDetails() {
 
 
 
-
-                    {/* AI Section */}
-
-                    <div className="mt-10">
+                </div>
 
 
-                        <h2 className="
-                        text-2xl
-                        font-bold
-                        text-text
+
+            </section>
+
+
+
+
+
+
+
+
+
+            {/* Content */}
+
+
+            <div className="
+            max-w-5xl
+            mx-auto
+            grid
+            md:grid-cols-3
+            gap-8
+            mt-10
+            ">
+
+
+
+
+
+                {/* Main */}
+
+
+                <div className="
+                md:col-span-2
+                space-y-8
+                ">
+
+
+
+
+                    <Section title="About Scholarship">
+
+
+                        <p className="
+                        text-muted
+                        leading-relaxed
                         ">
 
-                            🤖 Why ScholarMate AI recommends this
+                            {scholarship.description}
 
-                        </h2>
+                        </p>
+
+
+                    </Section>
 
 
 
-                        <ul className="mt-5 space-y-3 text-muted">
+
+
+
+
+                    <Section title="Why AI recommends this">
+
+
+                        <ul className="
+                        space-y-3
+                        text-muted
+                        ">
 
 
                             {
@@ -258,7 +328,7 @@ function ScholarshipDetails() {
 
                                         <li key={index}>
 
-                                            ✅ {reason}
+                                            ✓ {reason}
 
                                         </li>
 
@@ -271,7 +341,74 @@ function ScholarshipDetails() {
                         </ul>
 
 
+                    </Section>
+
+
+
+
+                </div>
+
+
+
+
+
+
+
+
+                {/* Sidebar */}
+
+
+                <div>
+
+
+                    <div className="
+                    bg-white
+                    rounded-3xl
+                    border
+                    border-border
+                    p-6
+                    space-y-5
+                    ">
+
+
+                        <Info
+
+                        icon={<MapPin/>}
+
+                        label="Country"
+
+                        value={scholarship.country}
+
+                        />
+
+
+
+                        <Info
+
+                        icon={<Wallet/>}
+
+                        label="Funding"
+
+                        value={scholarship.funding}
+
+                        />
+
+
+
+                        <Info
+
+                        icon={<Calendar/>}
+
+                        label="Deadline"
+
+                        value={scholarship.deadline}
+
+                        />
+
+
+
                     </div>
+
 
 
 
@@ -280,27 +417,130 @@ function ScholarshipDetails() {
                     <button
 
                         className="
-                        mt-10
                         w-full
+                        mt-6
                         bg-primary
                         hover:bg-primaryDark
                         text-white
                         py-4
                         rounded-2xl
                         font-semibold
-                        text-lg
                         transition
                         "
 
                     >
 
-                        Visit Official Scholarship Website 🌐
+                        Visit Official Website →
 
                     </button>
 
 
 
                 </div>
+
+
+
+
+            </div>
+
+
+
+        </div>
+
+    );
+
+}
+
+
+
+
+
+
+
+
+function Section({title,children}) {
+
+
+    return (
+
+        <div className="
+        bg-white
+        rounded-3xl
+        border
+        border-border
+        p-8
+        ">
+
+
+            <h2 className="
+            text-2xl
+            font-bold
+            text-text
+            mb-4
+            ">
+
+                {title}
+
+            </h2>
+
+
+            {children}
+
+
+        </div>
+
+    );
+
+}
+
+
+
+
+
+
+
+function Info({icon,label,value}) {
+
+
+    return (
+
+        <div className="
+        flex
+        gap-3
+        items-center
+        ">
+
+
+            <div className="
+            text-primary
+            ">
+
+                {icon}
+
+            </div>
+
+
+
+            <div>
+
+                <p className="
+                text-sm
+                text-muted
+                ">
+
+                    {label}
+
+                </p>
+
+
+                <p className="
+                font-semibold
+                text-text
+                ">
+
+                    {value}
+
+                </p>
 
 
             </div>
@@ -311,6 +551,7 @@ function ScholarshipDetails() {
     );
 
 }
+
 
 
 export default ScholarshipDetails;

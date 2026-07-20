@@ -1,5 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import Badge from "./Badge";
+import {
+    MapPin,
+    GraduationCap,
+    Wallet,
+    Calendar,
+    Sparkles
+} from "lucide-react";
 
 
 function ScholarshipCard({ scholarship }) {
@@ -13,26 +19,29 @@ function ScholarshipCard({ scholarship }) {
 
         <div className="
         bg-white
-        border
-        border-secondary
-        p-7
         rounded-3xl
+        border
+        border-border
+        p-8
         shadow-sm
         hover:shadow-xl
-        transition-all
+        transition
         duration-300
         ">
 
 
 
-            {/* Header */}
+
+
+            {/* Top Section */}
 
             <div className="
             flex
             justify-between
             items-start
-            gap-4
+            gap-6
             ">
+
 
 
                 <div>
@@ -41,19 +50,31 @@ function ScholarshipCard({ scholarship }) {
                     {
                         scholarship.score >= 80 && (
 
-                            <Badge>
+                            <span className="
+                            inline-flex
+                            items-center
+                            gap-2
+                            bg-secondary
+                            text-primary
+                            px-3
+                            py-1
+                            rounded-full
+                            text-sm
+                            font-medium
+                            ">
 
                                 ⭐ Best Match
 
-                            </Badge>
+                            </span>
 
                         )
                     }
 
 
 
+
                     <h2 className="
-                    text-2xl
+                    text-3xl
                     font-bold
                     text-text
                     mt-4
@@ -64,25 +85,65 @@ function ScholarshipCard({ scholarship }) {
                     </h2>
 
 
+
+                    <p className="
+                    text-muted
+                    mt-2
+                    flex
+                    items-center
+                    gap-2
+                    ">
+
+                        <GraduationCap size={18}/>
+
+                        {scholarship.university}
+
+                    </p>
+
+
+
                 </div>
 
 
 
+
+
+
+
+                {/* Score */}
 
 
                 <div className="
                 bg-secondary
                 text-primary
-                px-4
-                py-2
                 rounded-2xl
-                font-bold
-                whitespace-nowrap
+                px-5
+                py-4
+                text-center
                 ">
 
-                    {scholarship.score}% Match
+
+                    <p className="
+                    text-3xl
+                    font-bold
+                    ">
+
+                        {scholarship.score}%
+
+                    </p>
+
+
+                    <p className="
+                    text-sm
+                    ">
+
+                        Match
+
+                    </p>
+
 
                 </div>
+
 
 
             </div>
@@ -91,10 +152,15 @@ function ScholarshipCard({ scholarship }) {
 
 
 
+
+
+
+
             {/* Description */}
 
+
             <p className="
-            mt-5
+            mt-6
             text-muted
             leading-relaxed
             ">
@@ -107,98 +173,37 @@ function ScholarshipCard({ scholarship }) {
 
 
 
-            {/* Main Details */}
+
+
+
+            {/* Info Tags */}
+
 
             <div className="
             flex
             flex-wrap
             gap-3
-            mt-5
-            ">
-
-
-                <Badge>
-
-                    🌍 {scholarship.country}
-
-                </Badge>
-
-
-
-                <Badge>
-
-                    💰 {scholarship.funding}
-
-                </Badge>
-
-
-            </div>
-
-
-
-
-
-            {/* Extra Info */}
-
-            <div className="
-            mt-5
-            text-sm
-            text-muted
-            space-y-1
-            ">
-
-
-                <p>
-
-                    🏫 {scholarship.university}
-
-                </p>
-
-
-                <p>
-
-                    📅 Deadline: {scholarship.deadline}
-
-                </p>
-
-
-            </div>
-
-
-
-
-
-
-            {/* AI Insight */}
-
-            <div className="
             mt-6
-            bg-background
-            p-4
-            rounded-2xl
             ">
 
 
-                <h3 className="
-                font-semibold
-                text-text
-                ">
 
-                    ✨ AI Insight
-
-                </h3>
+                <Tag
+                icon={<MapPin size={16}/>}
+                text={scholarship.country}
+                />
 
 
+                <Tag
+                icon={<Wallet size={16}/>}
+                text={scholarship.funding}
+                />
 
-                <p className="
-                mt-2
-                text-sm
-                text-muted
-                ">
 
-                    {scholarship.reasons[0]}
-
-                </p>
+                <Tag
+                icon={<Calendar size={16}/>}
+                text={scholarship.deadline}
+                />
 
 
             </div>
@@ -207,61 +212,74 @@ function ScholarshipCard({ scholarship }) {
 
 
 
-            {/* Compatibility Bar */}
 
-            <div className="mt-6">
+
+
+
+            {/* AI Explanation */}
+
+
+            <div className="
+            mt-8
+            bg-background
+            rounded-2xl
+            p-6
+            ">
+
 
 
                 <div className="
                 flex
-                justify-between
-                text-sm
-                mb-2
+                items-center
+                gap-2
+                font-semibold
+                text-text
                 ">
 
 
-                    <span className="text-muted">
+                    <Sparkles
+                    size={20}
+                    className="text-primary"
+                    />
 
-                        Compatibility
 
-                    </span>
-
-
-                    <span className="font-medium text-primary">
-
-                        {scholarship.score}%
-
-                    </span>
+                    Why AI recommends this
 
 
                 </div>
 
 
 
-                <div className="
-                w-full
-                bg-gray-200
-                rounded-full
-                h-2
+
+
+
+                <ul className="
+                mt-4
+                space-y-3
+                text-muted
                 ">
 
 
-                    <div
+                    {
+                        scholarship.reasons.map(
 
-                        className="
-                        bg-primary
-                        h-2
-                        rounded-full
-                        "
+                            (reason,index)=>(
 
-                        style={{
-                            width:`${scholarship.score}%`
-                        }}
+                                <li
+                                key={index}
+                                >
 
-                    ></div>
+                                    ✓ {reason}
+
+                                </li>
+
+                            )
+
+                        )
+                    }
 
 
-                </div>
+                </ul>
 
 
             </div>
@@ -271,7 +289,14 @@ function ScholarshipCard({ scholarship }) {
 
 
 
+
+
+
+            {/* Button */}
+
+
             <button
+
 
                 onClick={() =>
                     navigate(
@@ -284,17 +309,16 @@ function ScholarshipCard({ scholarship }) {
 
 
                 className="
-                mt-7
+                mt-8
                 w-full
                 bg-primary
                 hover:bg-primaryDark
-                hover:scale-[1.02]
                 text-white
-                py-3
+                py-4
                 rounded-2xl
                 font-semibold
                 transition
-                shadow-md
+                hover:scale-[1.02]
                 "
 
             >
@@ -310,6 +334,41 @@ function ScholarshipCard({ scholarship }) {
     );
 
 }
+
+
+
+
+
+
+
+function Tag({icon,text}) {
+
+
+    return (
+
+        <div className="
+        flex
+        items-center
+        gap-2
+        bg-secondary
+        text-primary
+        px-4
+        py-2
+        rounded-full
+        text-sm
+        ">
+
+            {icon}
+
+            {text}
+
+        </div>
+
+    );
+
+}
+
+
 
 
 export default ScholarshipCard;

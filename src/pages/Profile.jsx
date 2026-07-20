@@ -1,8 +1,9 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { User, BookOpen, BarChart3, Globe, Wallet } from "lucide-react";
+
 import InputField from "../components/InputField";
 
-
+import React from "react";
 function Profile() {
 
 
@@ -10,7 +11,7 @@ function Profile() {
 
 
 
-    const [profile, setProfile] = useState({
+    const [profile, setProfile] = React.useState({
 
         name: "",
         field: "",
@@ -19,8 +20,6 @@ function Profile() {
         funding: ""
 
     });
-
-
 
 
 
@@ -58,72 +57,92 @@ function Profile() {
 
 
 
+
     return (
+
 
         <div className="
         min-h-screen
         bg-background
-        px-6
-        py-14
         ">
 
 
-            <div className="
-            max-w-3xl
-            mx-auto
+
+            {/* Header */}
+
+
+            <section className="
+            bg-primary
+            text-white
+            px-6
+            py-20
             text-center
             ">
 
 
                 <div className="
-                inline-flex
-                bg-secondary
-                text-primary
-                px-5
-                py-2
-                rounded-full
-                font-medium
+                max-w-3xl
+                mx-auto
                 ">
 
-                    🎓 Student Profile
+
+                    <div className="
+                    flex
+                    justify-center
+                    ">
+
+                        <div className="
+                        bg-white/20
+                        p-4
+                        rounded-2xl
+                        ">
+
+                            <User size={35}/>
+
+                        </div>
+
+                    </div>
+
+
+
+
+                    <h1 className="
+                    text-4xl
+                    md:text-5xl
+                    font-bold
+                    mt-6
+                    ">
+
+                        Tell Us About Yourself
+
+                    </h1>
+
+
+
+                    <p className="
+                    mt-4
+                    text-white/80
+                    text-lg
+                    ">
+
+                        Build your profile and let ScholarMate AI
+                        find opportunities made for you.
+
+                    </p>
+
 
                 </div>
 
 
-
-
-                <h1 className="
-                text-5xl
-                font-bold
-                mt-6
-                text-text
-                ">
-
-                    Tell Us About Yourself
-
-                </h1>
-
-
-
-
-                <p className="
-                mt-4
-                text-lg
-                text-muted
-                ">
-
-                    We'll analyze your profile and find scholarships
-                    that match your goals.
-
-                </p>
-
-
-            </div>
+            </section>
 
 
 
 
 
+
+
+            {/* Form */}
 
 
             <form
@@ -133,13 +152,12 @@ function Profile() {
                 className="
                 max-w-xl
                 mx-auto
-                mt-12
+                -mt-10
                 bg-white
-                p-10
                 rounded-3xl
+                p-8
+                md:p-10
                 shadow-xl
-                border
-                border-secondary
                 space-y-6
                 "
 
@@ -148,9 +166,10 @@ function Profile() {
 
 
 
+
                 <InputField
 
-                    icon="👤"
+                    icon={<User size={18}/>}
 
                     label="Full Name"
 
@@ -167,9 +186,10 @@ function Profile() {
 
 
 
+
                 <InputField
 
-                    icon="💻"
+                    icon={<BookOpen size={18}/>}
 
                     label="Academic Field"
 
@@ -186,15 +206,17 @@ function Profile() {
 
 
 
+
+
                 <InputField
 
-                    icon="📊"
+                    icon={<BarChart3 size={18}/>}
 
                     label="CGPA"
 
                     name="cgpa"
 
-                    placeholder="Example: 3.5"
+                    placeholder="Example: 3.7"
 
                     value={profile.cgpa}
 
@@ -206,15 +228,17 @@ function Profile() {
 
 
 
+
+
                 <InputField
 
-                    icon="🌍"
+                    icon={<Globe size={18}/>}
 
                     label="Preferred Country"
 
                     name="country"
 
-                    placeholder="Example: South Korea"
+                    placeholder="Example: Germany"
 
                     value={profile.country}
 
@@ -226,9 +250,11 @@ function Profile() {
 
 
 
+
+
                 <InputField
 
-                    icon="💰"
+                    icon={<Wallet size={18}/>}
 
                     label="Funding Preference"
 
@@ -247,25 +273,25 @@ function Profile() {
 
 
 
+
                 <button
 
                     className="
                     w-full
                     bg-primary
                     hover:bg-primaryDark
-                    hover:scale-[1.02]
                     text-white
                     py-4
                     rounded-2xl
                     font-semibold
                     text-lg
                     transition
-                    shadow-lg
+                    hover:scale-[1.02]
                     "
 
                 >
 
-                    Find My Scholarships 🚀
+                    Find My Scholarships →
 
                 </button>
 
@@ -274,7 +300,10 @@ function Profile() {
             </form>
 
 
+
+
         </div>
+
 
     );
 

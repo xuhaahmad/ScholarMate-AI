@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
+import { Search, Sparkles } from "lucide-react";
 
 import scholarships from "../data/scholarships";
 import calculateMatch from "../utils/matcher";
@@ -8,6 +9,7 @@ import ScholarshipCard from "../components/ScholarshipCard";
 
 
 function Results() {
+
 
     const location = useLocation();
 
@@ -18,115 +20,146 @@ function Results() {
 
 
     const matchedScholarships = scholarships.map(
-        (scholarship) => {
+        (scholarship) => ({
 
-            return {
+            ...scholarship,
 
-                ...scholarship,
+            score: calculateMatch(
+                profile,
+                scholarship
+            ),
 
-                score: calculateMatch(
-                    profile,
-                    scholarship
-                ),
+            reasons: generateExplanation(
+                profile,
+                scholarship
+            )
 
-                reasons: generateExplanation(
-                    profile,
-                    scholarship
-                )
-
-            };
-
-        }
+        })
     );
 
 
 
     matchedScholarships.sort(
-        (a, b) => b.score - a.score
+        (a,b) => b.score - a.score
     );
 
 
 
     const filteredScholarships = matchedScholarships.filter(
-        (scholarship) => {
+        (scholarship) =>
 
-            return (
+            scholarship.name
+            .toLowerCase()
+            .includes(search.toLowerCase())
 
-                scholarship.name
-                    .toLowerCase()
-                    .includes(search.toLowerCase())
+            ||
 
-                ||
+            scholarship.country
+            .toLowerCase()
+            .includes(search.toLowerCase())
 
-                scholarship.country
-                    .toLowerCase()
-                    .includes(search.toLowerCase())
+            ||
 
-                ||
+            scholarship.university
+            .toLowerCase()
+            .includes(search.toLowerCase())
 
-                scholarship.university
-                    .toLowerCase()
-                    .includes(search.toLowerCase())
-
-            );
-
-        }
     );
+
 
 
 
     return (
 
         <div className="
-min-h-screen
-bg-background
-px-6
-py-14
-">
+        min-h-screen
+        bg-background
+        px-6
+        py-14
+        ">
+
 
 
             {/* Header */}
 
-            <div className="text-center">
+            <section className="
+            bg-primary
+            text-white
+            rounded-3xl
+            max-w-5xl
+            mx-auto
+            p-10
+            text-center
+            shadow-lg
+            ">
+
+
+                <div className="
+                flex
+                justify-center
+                ">
+
+                    <div className="
+                    bg-white/20
+                    p-4
+                    rounded-2xl
+                    ">
+
+                        <Sparkles size={32}/>
+
+                    </div>
+
+                </div>
+
+
 
                 <h1 className="
-text-4xl
-md:text-5xl
-font-bold
-text-center
-text-text
-">
-                    Your Scholarship Matches 🎓
+                text-4xl
+                md:text-5xl
+                font-bold
+                mt-6
+                ">
+
+                    Your AI Scholarship Matches 🎓
+
                 </h1>
 
 
 
                 <p className="
-text-center
-text-muted
-mt-4
-max-w-xl
-mx-auto
-">
-                    ScholarMate AI analyzed your profile and found opportunities
-                    that match your academic goals.
+                mt-4
+                text-white/80
+                max-w-xl
+                mx-auto
+                ">
+
+                    ScholarMate AI analyzed your profile and found
+                    scholarships that match your goals.
+
                 </p>
 
 
-            </div>
+            </section>
+
+
+
+
+
 
 
             {/* Profile Summary */}
+
 
             <div className="
             max-w-4xl
             mx-auto
             mt-10
             bg-white
-            border
-            border-secondary
             rounded-3xl
+            border
+            border-border
             p-8
+            shadow-sm
             ">
 
 
@@ -150,63 +183,25 @@ mx-auto
                 ">
 
 
-                    <div>
+                    <ProfileItem
+                    label="Name"
+                    value={profile.name || "Student"}
+                    />
 
-                        <p className="text-sm text-muted">
-                            Name
-                        </p>
+                    <ProfileItem
+                    label="Field"
+                    value={profile.field || "Not specified"}
+                    />
 
-                        <p className="font-medium text-text mt-1">
-                            {profile.name || "Student"}
-                        </p>
+                    <ProfileItem
+                    label="CGPA"
+                    value={profile.cgpa || "N/A"}
+                    />
 
-                    </div>
-
-
-
-
-                    <div>
-
-                        <p className="text-sm text-muted">
-                            Field
-                        </p>
-
-                        <p className="font-medium text-text mt-1">
-                            {profile.field || "Not specified"}
-                        </p>
-
-                    </div>
-
-
-
-
-                    <div>
-
-                        <p className="text-sm text-muted">
-                            CGPA
-                        </p>
-
-                        <p className="font-medium text-text mt-1">
-                            {profile.cgpa || "N/A"}
-                        </p>
-
-                    </div>
-
-
-
-
-                    <div>
-
-                        <p className="text-sm text-muted">
-                            Preferred Country
-                        </p>
-
-                        <p className="font-medium text-text mt-1">
-                            {profile.country || "Any"}
-                        </p>
-
-                    </div>
-
+                    <ProfileItem
+                    label="Country"
+                    value={profile.country || "Any"}
+                    />
 
 
                 </div>
@@ -214,36 +209,59 @@ mx-auto
 
             </div>
 
+
+
+
+
+
+
+
             {/* Search */}
 
+
             <div className="
-max-w-2xl
-mx-auto
-mt-10
-">
+            max-w-2xl
+            mx-auto
+            mt-10
+            relative
+            ">
+
+
+                <Search
+
+                    className="
+                    absolute
+                    left-4
+                    top-4
+                    text-muted
+                    "
+
+                    size={20}
+
+                />
 
 
                 <input
 
                     type="text"
 
-                    placeholder="🔍 Search scholarships..."
+                    placeholder="Search scholarships..."
 
                     value={search}
 
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e)=>setSearch(e.target.value)}
 
                     className="
                     w-full
                     bg-white
                     border
-                    border-secondary
+                    border-border
                     p-4
+                    pl-12
                     rounded-2xl
                     focus:outline-none
                     focus:ring-2
                     focus:ring-primary
-                    transition
                     "
 
                 />
@@ -255,57 +273,66 @@ mt-10
 
 
 
-            {/* Scholarship Cards */}
+
+
+
+            {/* Scholarships */}
+
+
             <div className="
-max-w-4xl
-mx-auto
-mt-12
-space-y-8
-">
-
-
-                {
-                    filteredScholarships.length > 0 ? (
-
-                        filteredScholarships.map(
-                            (scholarship) => (
-
-                                <ScholarshipCard
-
-                                    key={scholarship.id}
-
-                                    scholarship={scholarship}
-
-                                />
-
-                            )
-                        )
-
-                    ) : (
-
-                        <div className="
-            bg-white
-            border
-            border-secondary
-            rounded-3xl
-            p-10
-            text-center
+            max-w-4xl
+            mx-auto
+            mt-12
+            space-y-8
             ">
 
 
+                {
+                    filteredScholarships.length > 0 ?
+
+
+                    filteredScholarships.map(
+
+                        (scholarship)=>(
+
+                            <ScholarshipCard
+
+                            key={scholarship.id}
+
+                            scholarship={scholarship}
+
+                            />
+
+                        )
+
+                    )
+
+
+                    :
+
+                    (
+
+                        <div className="
+                        bg-white
+                        rounded-3xl
+                        border
+                        border-border
+                        p-10
+                        text-center
+                        ">
+
+
                             <div className="text-5xl">
-
                                 🔍
-
                             </div>
 
 
                             <h2 className="
-                text-2xl
-                font-bold
-                mt-4
-                text-text
-                ">
+                            text-2xl
+                            font-bold
+                            mt-4
+                            text-text
+                            ">
 
                                 No Scholarships Found
 
@@ -313,12 +340,11 @@ space-y-8
 
 
                             <p className="
-                text-muted
-                mt-3
-                ">
+                            text-muted
+                            mt-3
+                            ">
 
-                                Try searching with another country,
-                                university, or scholarship name.
+                                Try another search.
 
                             </p>
 
@@ -326,11 +352,11 @@ space-y-8
                         </div>
 
                     )
+
                 }
 
 
             </div>
-
 
 
         </div>
@@ -338,6 +364,42 @@ space-y-8
     );
 
 }
+
+
+
+
+
+function ProfileItem({label,value}) {
+
+
+    return (
+
+        <div>
+
+            <p className="
+            text-sm
+            text-muted
+            ">
+                {label}
+            </p>
+
+
+            <p className="
+            font-semibold
+            text-text
+            mt-1
+            ">
+                {value}
+            </p>
+
+
+        </div>
+
+    );
+
+}
+
+
 
 
 export default Results;
