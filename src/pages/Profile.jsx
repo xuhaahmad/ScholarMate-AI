@@ -30,9 +30,9 @@ console.log("Profile loaded");
 
     e.preventDefault();
 
-    navigate("/results", {
-      state: profile
-    });
+navigate("/loading", {
+  state: profile
+});
 
   }
 

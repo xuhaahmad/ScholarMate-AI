@@ -4,28 +4,30 @@ import Profile from "./pages/Profile";
 import Results from "./pages/Results";
 import Home from "./pages/Home";
 import ScholarshipDetails from "./pages/ScholarshipDetails";
+import Loading from "./pages/Loading";
+
 function App() {
 
-  return (
-    <BrowserRouter>
+    return (
+        <BrowserRouter>
 
-      <Routes>
+            <Routes>
 
-        <Route 
-  path="/scholarship-details" 
-  element={<ScholarshipDetails />} 
-/>
+                <Route
+                    path="/scholarship-details"
+                    element={<ScholarshipDetails />}
+                />
+                <Route path="/loading" element={<Loading />} />
+                <Route path="/" element={<Home />} />
 
-       <Route path="/" element={<Home />} />
+                <Route path="/profile" element={<Profile />} />
 
-<Route path="/profile" element={<Profile />} />
+                <Route path="/results" element={<Results />} />
 
-        <Route path="/results" element={<Results />} />
+            </Routes>
 
-      </Routes>
-
-    </BrowserRouter>
-  );
+        </BrowserRouter>
+    );
 }
 
 
