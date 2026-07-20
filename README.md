@@ -23,19 +23,32 @@ ScholarMate AI is a modern web application that helps students discover scholars
 
 ## 📸 Screenshots
 
-_Add screenshots here after deployment._
+![alt text](image.png)
+
+## 🚀 Live Demo
+
+[Live Demo](https://scholar-mate-ai-chi.vercel.app/)
 
 ## 🚀 Installation
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/xuhaahmad/ScholarMate-AI.git
 
-cd scholarmate-ai
+cd ScholarMate-AI
 
 npm install
 
 npm run dev
 ```
+
+## 📸 Screenshots
+
+### Home Page
+![Home](screenshots/home1.jpg)
+![Home](screenshots/home2.jpg)
+
+### Profile Page
+![Profile](screenshots/profile1.jpg)
 
 ## 📂 Project Structure
 
