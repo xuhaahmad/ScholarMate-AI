@@ -1,147 +1,174 @@
 import { useNavigate } from "react-router-dom";
-
+import Navbar from "../components/Navbar";
+import FeatureCard from "../components/FeatureCard";
+import Footer from "../components/Footer";
 
 function Home() {
 
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
 
-  return (
+    return (
 
-    <div className="min-h-screen bg-background">
-
-
-      {/* Navbar */}
-
-      <nav className="flex justify-between items-center px-10 py-6">
-
-        <h1 className="text-2xl font-bold text-primary">
-          ScholarMate AI 🎓
-        </h1>
+        <div className="min-h-screen bg-background">
 
 
-        <div className="space-x-6 text-gray-600">
-
-          <span>
-            Features
-          </span>
+            <Navbar />
 
 
-          <span>
-            About
-          </span>
+
+            {/* Hero Section */}
+
+            <section className="
+            max-w-6xl
+            mx-auto
+            px-6
+            py-20
+            text-center
+            ">
+
+
+                <div className="
+                inline-block
+                bg-secondary
+                text-primary
+                px-5
+                py-2
+                rounded-full
+                font-medium
+                ">
+
+                    🤖 AI Powered Scholarship Finder
+
+                </div>
+
+
+
+
+                <h1 className="
+                text-6xl
+                font-bold
+                mt-8
+                text-text
+                leading-tight
+                ">
+
+                    Find Scholarships
+                    <br />
+
+                    Made For You 🎓
+
+                </h1>
+
+
+
+
+                <p className="
+                max-w-2xl
+                mx-auto
+                mt-6
+                text-xl
+                text-muted
+                ">
+
+                    ScholarMate AI analyzes your academic profile
+                    and recommends scholarships that match your goals.
+
+                </p>
+
+
+
+
+                <button
+
+                    onClick={() => navigate("/profile")}
+
+                    className="
+                    mt-10
+                    bg-primary
+                    hover:bg-primaryDark
+                    text-white
+                    px-10
+                    py-4
+                    rounded-2xl
+                    text-lg
+                    font-semibold
+                    transition
+                    "
+
+                >
+
+                    Start Your Journey 🚀
+
+                </button>
+
+
+
+            </section>
+
+
+
+
+
+            {/* Features */}
+
+            <section className="
+            max-w-5xl
+            mx-auto
+            px-6
+            pb-20
+            grid
+            md:grid-cols-3
+            gap-6
+            ">
+
+
+
+                <FeatureCard
+
+                    icon="🤖"
+
+                    title="AI Matching"
+
+                    description="Get scholarship recommendations based on your academic profile."
+
+                />
+
+
+
+
+                <FeatureCard
+
+                    icon="🎯"
+
+                    title="Personalized Results"
+
+                    description="Find opportunities that match your field, CGPA and preferences."
+
+                />
+
+
+
+
+                <FeatureCard
+
+                    icon="🌍"
+
+                    title="Global Opportunities"
+
+                    description="Discover scholarships from universities around the world."
+
+                />
+
+
+            </section>
+
+             <Footer />
 
 
         </div>
 
-
-      </nav>
-
-
-
-      {/* Hero Section */}
-
-      <div className="flex justify-center items-center px-5 py-20">
-
-
-        <div className="text-center max-w-3xl">
-
-
-          <h1 className="text-6xl font-bold text-primary">
-
-            Find Your Perfect Scholarship With AI 🤖
-
-          </h1>
-
-
-
-          <p className="mt-6 text-xl text-muted">
-
-            ScholarMate analyzes your academic profile and
-            recommends scholarships that fit your goals.
-
-          </p>
-
-
-
-          <button
-
-            onClick={() => navigate("/profile")}
-
-            className="mt-8 bg-primary text-white px-10 py-4 rounded-2xl text-lg"
-
-          >
-
-            Start Your Journey 🚀
-
-          </button>
-
-
-
-          {/* Feature Cards */}
-
-          <div className="grid md:grid-cols-3 gap-5 mt-16">
-
-
-            <div className="bg-white p-6 rounded-3xl shadow">
-
-              🤖
-
-              <h3 className="font-bold mt-3">
-                AI Matching
-              </h3>
-
-              <p className="text-sm text-gray-500 mt-2">
-                Smart scholarship recommendations.
-              </p>
-
-            </div>
-
-
-
-            <div className="bg-white p-6 rounded-3xl shadow">
-
-              🌍
-
-              <h3 className="font-bold mt-3">
-                Global Opportunities
-              </h3>
-
-              <p className="text-sm text-gray-500 mt-2">
-                Discover scholarships worldwide.
-              </p>
-
-            </div>
-
-
-
-            <div className="bg-white p-6 rounded-3xl shadow">
-
-              🎓
-
-              <h3 className="font-bold mt-3">
-                Personalized Advice
-              </h3>
-
-              <p className="text-sm text-gray-500 mt-2">
-                Recommendations based on your profile.
-              </p>
-
-            </div>
-
-
-          </div>
-
-
-        </div>
-
-
-      </div>
-
-
-    </div>
-
-  );
+    );
 
 }
 

@@ -1,43 +1,133 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+
 function Loading() {
 
-  const navigate = useNavigate();
-  const location = useLocation();
+    const navigate = useNavigate();
 
-  useEffect(() => {
+    const location = useLocation();
 
-    const timer = setTimeout(() => {
+    const profile = location.state;
 
-      navigate("/results", {
-        state: location.state
-      });
 
-    }, 2500);
 
-    return () => clearTimeout(timer);
+    useEffect(() => {
 
-  }, []);
+        const timer = setTimeout(() => {
 
-  return (
+            navigate("/results", {
 
-    <div className="min-h-screen flex flex-col justify-center items-center bg-background">
+                state: profile
 
-      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            });
 
-      <h1 className="text-3xl font-bold mt-8">
-        🤖 AI is analyzing your profile...
-      </h1>
+        }, 2500);
 
-      <p className="mt-4 text-muted">
-        Finding the best scholarships for you.
-      </p>
 
-    </div>
 
-  );
+        return () => clearTimeout(timer);
+
+
+    }, [navigate, profile]);
+
+
+
+
+
+    return (
+
+        <div className="
+        min-h-screen
+        bg-background
+        flex
+        items-center
+        justify-center
+        px-6
+        ">
+
+
+            <div className="
+            bg-white
+            p-10
+            rounded-3xl
+            shadow-xl
+            text-center
+            max-w-md
+            ">
+
+
+
+                <div className="
+                text-6xl
+                animate-bounce
+                ">
+
+                    🤖
+
+                </div>
+
+
+
+
+                <h1 className="
+                text-3xl
+                font-bold
+                text-primary
+                mt-6
+                ">
+
+                    ScholarMate AI is analyzing...
+
+                </h1>
+
+
+
+
+                <p className="
+                text-muted
+                mt-4
+                ">
+
+                    Finding scholarships that match your academic profile.
+
+                </p>
+
+
+
+
+                <div className="
+                mt-8
+                w-full
+                bg-gray-200
+                rounded-full
+                h-3
+                ">
+
+
+                    <div className="
+                    bg-primary
+                    h-3
+                    rounded-full
+                    animate-pulse
+                    w-3/4
+                    ">
+
+                    </div>
+
+
+                </div>
+
+
+
+            </div>
+
+
+        </div>
+
+    );
 
 }
+
 
 export default Loading;
