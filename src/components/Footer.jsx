@@ -18,7 +18,7 @@ function Footer() {
             text-primary
             ">
 
-                ScholarMate AI 🎓
+                ScholarMate AI 
 
             </h2>
 
@@ -98,15 +98,6 @@ function Footer() {
 
 
 
-            <p className="
-            text-sm
-            text-gray-400
-            mt-6
-            ">
-
-                Built with ❤️ by Zuha Ahmad
-
-            </p>
 
 
 
