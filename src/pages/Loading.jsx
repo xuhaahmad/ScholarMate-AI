@@ -14,30 +14,53 @@ function Loading() {
     const profile = location.state;
 
 
+useEffect(() => {
 
-    useEffect(() => {
+    async function findScholarships() {
 
+        try {
 
-        const timer = setTimeout(() => {
+            const response = await fetch(
+                "http://localhost:5000/api/search-scholarships",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        ...profile,
+                        degree: "Bachelor",
+                        destination: profile.country
+                    })
+                }
+            );
 
+            if (!response.ok) {
+                throw new Error("Scholarship search failed");
+            }
+
+            const data = await response.json();
+
+            console.log("Scholarship results:", data);
 
             navigate("/results", {
-
-                state: profile
-
+                state: {
+                    profile: profile,
+                    scholarships: data.scholarships
+                }
             });
 
+        } catch (error) {
 
-        }, 2500);
+            console.error("Scholarship search error:", error);
 
+        }
 
+    }
 
-        return () => clearTimeout(timer);
+    findScholarships();
 
-
-    }, [navigate, profile]);
-
-
+}, [navigate, profile]);
 
 
 

@@ -1,44 +1,38 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Search, Sparkles } from "lucide-react";
-
-import scholarships from "../data/scholarships";
-import calculateMatch from "../utils/matcher";
-import generateExplanation from "../utils/explanation";
 import ScholarshipCard from "../components/ScholarshipCard";
-
 
 function Results() {
 
+const location = useLocation();
 
-    const location = useLocation();
+const profile = location.state?.profile || {};
 
-    const profile = location.state || {};
+const aiScholarships = location.state?.scholarships || [];
 
-    const [search, setSearch] = useState("");
+const [search, setSearch] = useState("");
 
+const matchedScholarships = aiScholarships.map(
+    (scholarship, index) => ({
 
+        ...scholarship,
 
+        id: index + 1,
 
-    const matchedScholarships = scholarships.map(
-        (scholarship) => ({
+        score:
+            scholarship.eligibilityStatus === "likely_match"
+                ? 100
+                : scholarship.eligibilityStatus === "unclear"
+                ? 50
+                : 0,
 
-            ...scholarship,
+        reasons: scholarship.explanation
+            ? [scholarship.explanation]
+            : []
 
-            score: calculateMatch(
-                profile,
-                scholarship
-            ),
-
-            reasons: generateExplanation(
-                profile,
-                scholarship
-            )
-
-        })
-    );
-
-
+    })
+);
 
 
 
@@ -150,7 +144,7 @@ function Results() {
                 ">
 
 
-                    Your AI Scholarship Matches 🎓
+                    Your AI Scholarship Matches 
 
 
                 </h1>

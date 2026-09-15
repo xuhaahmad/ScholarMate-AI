@@ -6,6 +6,7 @@ import Results from "./pages/Results";
 import Home from "./pages/Home";
 import ScholarshipDetails from "./pages/ScholarshipDetails";
 import Loading from "./pages/Loading";
+import About from "./pages/About";
 function AnimatedRoutes() {
 
     const location = useLocation();
@@ -67,7 +68,7 @@ function AnimatedRoutes() {
                         </Page>
                     }
                 />
-
+                <Route path="/about" element={<About />} />
 
             </Routes>
 
@@ -82,31 +83,31 @@ function AnimatedRoutes() {
 
 
 
-function Page({children}) {
+function Page({ children }) {
 
 
     return (
 
         <motion.div
 
-        initial={{
-            opacity:0,
-            y:20
-        }}
+            initial={{
+                opacity: 0,
+                y: 20
+            }}
 
-        animate={{
-            opacity:1,
-            y:0
-        }}
+            animate={{
+                opacity: 1,
+                y: 0
+            }}
 
-        exit={{
-            opacity:0,
-            y:-20
-        }}
+            exit={{
+                opacity: 0,
+                y: -20
+            }}
 
-        transition={{
-            duration:0.35
-        }}
+            transition={{
+                duration: 0.35
+            }}
 
         >
 

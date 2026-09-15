@@ -46,10 +46,6 @@ function Navbar() {
                 ">
 
 
-                    <Sparkles 
-                    size={22}
-                    className="sm:w-6 sm:h-6"
-                    />
 
 
                     <span>
@@ -65,36 +61,25 @@ function Navbar() {
 
                 {/* Button */}
 
+                {/* Buttons */}
 
-                <button
+                <div className="flex items-center gap-3">
 
-                    onClick={() => navigate("/profile")}
+    <button
+        onClick={() => navigate("/about")}
+        className="
+        text-white
+        text-sm
+        sm:text-base
+        font-medium
+        hover:opacity-80
+        transition
+        "
+    >
+        About
+    </button>
 
-
-                    className="
-                    bg-white
-                    text-primary
-                    px-4
-                    sm:px-6
-                    py-2
-                    sm:py-3
-                    rounded-2xl
-                    text-sm
-                    sm:text-base
-                    font-semibold
-                    hover:scale-105
-                    transition
-                    whitespace-nowrap
-                    "
-
-                >
-
-                    Get Started 🚀
-
-
-                </button>
-
-
+</div>
 
             </div>
 
