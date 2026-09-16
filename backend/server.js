@@ -46,7 +46,11 @@ app.post("/api/search-scholarships", async (req, res) => {
         console.log("Scholarship search:", searchQuery);
 
         // Search the web with Tavily
-        const response = await tavilyClient.search(searchQuery);
+        const tavilyStart = Date.now();
+        const response = await tavilyClient.search(searchQuery, {
+            maxResults: 5
+        }); 
+        console.log("TAVILY TIME:", Date.now() - tavilyStart, "ms");
         console.log("Tavily results:", response);
         const officialDomains = [
             "daad.de",
@@ -109,9 +113,14 @@ Rules:
 - Keep the original source URL.
 - Return only the JSON object.
 `;
-
+        const aiStart = Date.now();
         const aiResponse = await groqClient.chat.completions.create({
             model: "openai/gpt-oss-20b",
+            reasoning_effort: "low",
+
+            response_format: {
+                type: "json_object"
+            },
 
             messages: [
                 {
@@ -120,13 +129,13 @@ Rules:
                 }
             ]
         });
+        console.log("GROQ TIME:", Date.now() - aiStart, "ms");
+        console.log("RAW GROQ RESPONSE:");
+        console.log(aiResponse.choices[0].message.content);
 
-console.log("RAW GROQ RESPONSE:");
-console.log(aiResponse.choices[0].message.content);
-
-const analysis = JSON.parse(
-    aiResponse.choices[0].message.content
-);
+        const analysis = JSON.parse(
+            aiResponse.choices[0].message.content
+        );
 
         res.json({
             query: searchQuery,
@@ -219,6 +228,7 @@ Rules:
             response_format: {
                 type: "json_object"
             },
+            reasoning_format: "hidden",
             messages: [
                 {
                     role: "user",

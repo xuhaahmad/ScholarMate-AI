@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Sparkles, Brain } from "lucide-react";
 import { motion } from "framer-motion";
+import { Brain, Sparkles } from "lucide-react";
 
 
 function Loading() {
@@ -12,9 +12,15 @@ function Loading() {
     const location = useLocation();
 
     const profile = location.state;
-
+const hasSearched = useRef(false);
 
 useEffect(() => {
+
+    if (hasSearched.current) {
+        return;
+    }
+
+    hasSearched.current = true;
 
     async function findScholarships() {
 
