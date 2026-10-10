@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { User, BookOpen, BarChart3, Globe, Wallet } from "lucide-react";
 import InputField from "../components/InputField";
 import React from "react";
@@ -9,15 +9,20 @@ function Profile() {
 
     const navigate = useNavigate();
 
+    const location = useLocation();
+
+    // Prefilled when the student comes back via "Edit Profile" after a failed search.
+    const savedProfile = location.state?.profile;
+
 
 
     const [profile, setProfile] = React.useState({
 
-        name: "",
-        field: "",
-        cgpa: "",
-        country: "",
-        funding: ""
+        name: savedProfile?.name || "",
+        field: savedProfile?.field || "",
+        cgpa: savedProfile?.cgpa || "",
+        country: savedProfile?.country || "",
+        funding: savedProfile?.funding || ""
 
     });
 
@@ -245,6 +250,8 @@ function Profile() {
                     value={profile.field}
 
                     onChange={handleChange}
+
+                    required
 
                 />
 

@@ -4,7 +4,8 @@ function InputField({
     name,
     placeholder,
     value,
-    onChange
+    onChange,
+    required = false
 }) {
 
 
@@ -41,6 +42,8 @@ function InputField({
                 value={value}
 
                 onChange={onChange}
+
+                required={required}
 
                 className="
                 w-full

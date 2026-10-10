@@ -4,9 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.js",
+    "dev:client": "vite",
+    "dev:server": "node --watch backend/local-server.js",
+    "start:server": "node backend/local-server.js",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test \"backend/**/*.test.js\"",
     "preview": "vite preview"
   },
   "dependencies": {
