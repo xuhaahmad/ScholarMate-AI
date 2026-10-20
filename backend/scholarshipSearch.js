@@ -135,6 +135,13 @@ async function runSearches({ plan, searchClient, config, queryCache, logger, sta
     });
 }
 
+// What a quote has to talk about to count as evidence for a field.
+const EVIDENCE_TOPICS = {
+    degree: /bachelor|master|undergrad|postgrad|graduate|ph\.?d|doctor|m\.?sc|mba|degree/i,
+    nationality: /national|citizen|countr|international|resident|residency|passport|origin|all students|worldwide/i,
+    funding: /fund|stipend|tuition|grant|award|cover|allowance|waiver|benefit|insurance|salary|€|\$|£|euro|dollar|pound|per month|per year|amount|monthly|annual/i
+};
+
 const SCHOLARSHIP_WORDS = /scholarship|stipend|fellowship|bursar|stipendium|beca|bourse|funding opportunit/gi;
 
 const KEYWORDS = /scholarship|grant|fellowship|bursar|stipend|tuition|fund|deadline|eligib|apply|applica|requirement|nationalit|citizen|degree|master|bachelor|ph\.?d|doctor|graduate|gpa|grade|award|benefit|allowance|opens?|closes?|criteria|candidate/i;
@@ -575,6 +582,8 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
     }
 
     const inSource = (quote) => quoteInSource(quote, source.normalizedText);
+    // A quote must be on the page AND be about the thing it is evidence for.
+    const supports = (quote, topic) => inSource(quote) && topic.test(unwrapQuote(quote));
     const evidence = [];
     const addEvidence = (field, quote) => {
         if (inSource(quote)) evidence.push({ field, quote: cleanText(unwrapQuote(quote), 240) });
@@ -584,7 +593,8 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
     const degreeLevels = [...new Set(cleanList(raw.degreeLevels, 4, 30)
         .map((level) => (/^any$|all/i.test(level) ? "any" : normalizeDegree(level)))
         .filter(Boolean))];
-    addEvidence("degree", raw.degreeEvidence);
+    const degreeSupported = supports(raw.degreeEvidence, EVIDENCE_TOPICS.degree);
+    if (degreeSupported) addEvidence("degree", raw.degreeEvidence);
 
     // Fields
     const fields = cleanList(raw.fields, 10, 80);
@@ -597,9 +607,9 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
         type: nationalityType,
         countries: cleanList(nationalityRaw.countries, 60, 40),
         text: cleanText(nationalityRaw.evidence, 240),
-        evidenceVerified: inSource(nationalityRaw.evidence)
+        evidenceVerified: supports(nationalityRaw.evidence, EVIDENCE_TOPICS.nationality)
     };
-    addEvidence("nationality", nationalityRaw.evidence);
+    if (nationality.evidenceVerified) addEvidence("nationality", nationalityRaw.evidence);
 
     // Minimum grade
     let minGrade = null;
@@ -627,9 +637,9 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
         .filter((requirement) => requirement.text);
 
     // Funding: amounts and funding level are only used when the source is quoted.
-    const fundingVerified = inSource(raw.fundingEvidence);
+    const fundingVerified = supports(raw.fundingEvidence, EVIDENCE_TOPICS.funding);
     const fundingType = fundingVerified && ["full", "partial"].includes(raw.fundingType) ? raw.fundingType : "unknown";
-    addEvidence("funding", raw.fundingEvidence);
+    if (fundingVerified) addEvidence("funding", raw.fundingEvidence);
 
     // Names of places and organisations must appear on the page.
     const grounded = (value, maxLength) => {
@@ -718,7 +728,7 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
         retrievedAt: source.retrievedAt,
         evidence,
         evidenceVerified: {
-            degree: inSource(raw.degreeEvidence),
+            degree: degreeSupported,
             fields: inSource(raw.fieldsEvidence)
         },
         description: cleanText(raw.summary, 400) ?? NOT_SPECIFIED,

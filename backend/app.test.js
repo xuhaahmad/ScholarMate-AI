@@ -275,6 +275,39 @@ test("quotes the AI wraps in quotation marks still count as evidence", async (t)
     assert.ok(scholarship.evidence.every((item) => !item.quote.startsWith("\"") && !item.quote.startsWith("“")));
 });
 
+test("quotes that are on the page but not about the requirement are not evidence", async (t) => {
+    // Real case: a listing page where the AI quoted a university's location as degree evidence.
+    const offTopic = {
+        ...DAAD_ITEM,
+        degreeEvidence: "Funding: 992 euros per month, health insurance and a travel allowance",
+        nationality: { type: "any", evidence: "Funding: 992 euros per month, health insurance and a travel allowance" },
+        fundingEvidence: "Applicants from all countries may apply"
+    };
+    const { request } = await startApp(t, { ai: () => aiReply(JSON.stringify({ scholarships: [offTopic] })) });
+
+    const [scholarship] = (await search(request)).json.scholarships;
+
+    assert.equal(scholarship.evidenceVerified.degree, false);
+    assert.equal(scholarship.nationality.evidenceVerified, false);
+    assert.equal(scholarship.funding, "Not specified");
+    assert.equal(scholarship.degreeLevel, "Master (unconfirmed)");
+    assert.equal(scholarship.match.level, "preliminary");
+    assert.ok(!scholarship.evidence.some((item) => ["degree", "nationality", "funding"].includes(item.field)));
+});
+
+test("a third-party page with good quotes still gives only a preliminary match", async (t) => {
+    const fromBlog = { ...DAAD_ITEM, sourceId: "S2", name: "Heinrich Boll Foundation Scholarships",
+        degreeEvidence: "Heinrich Boll Foundation Scholarships for master's and PhD students",
+        nationality: { type: "unknown" }, deadline: { date: null }, applicationUrl: null };
+    const { request } = await startApp(t, { ai: () => aiReply(JSON.stringify({ scholarships: [fromBlog] })) });
+
+    const [scholarship] = (await search(request)).json.scholarships;
+
+    assert.equal(scholarship.sourceType, "unknown");
+    assert.equal(scholarship.evidenceVerified.degree, true);
+    assert.equal(scholarship.match.level, "preliminary");
+});
+
 test("names found in the page title or with singular/plural differences are kept", async (t) => {
     const page = {
         title: "Study scholarships for STEM disciplines - DAAD",

@@ -8,11 +8,15 @@ import { normalizeDegree } from "./searchPlan.js";
 // - Hard criteria (degree, nationality, minimum grade, deadline) decide
 //   eligibility. Preferences (field, destination, funding) only affect ranking.
 // - "verified" means every hard criterion that the source states was checked
-//   against source-backed evidence and met. It does not guarantee eligibility:
-//   providers may have requirements the page did not list.
+//   against on-topic evidence from an OFFICIAL source page and met. Quotes from
+//   third-party or unverified sites at most give a "preliminary" match. It does
+//   not guarantee eligibility: providers may have requirements the page did not list.
 // - Nothing is turned into a percentage score.
 
 const HARD = ["degree", "nationality", "grade", "deadline"];
+
+// Only requirements from these sources can make a match "verified".
+const OFFICIAL_SOURCE_TYPES = ["government", "university", "official_program"];
 
 const DEGREE_NAMES = { bachelor: "Bachelor's", master: "Master's", phd: "PhD", any: "all degree levels" };
 
@@ -201,22 +205,30 @@ export function matchScholarship(profile, scholarship) {
     const degreeAndNationality = hard.filter((item) => item.criterion === "degree" || item.criterion === "nationality");
 
     let level;
+    let note = null;
+
+    const requirementsConfirmed =
+        degreeAndNationality.every((item) => item.status === "met" && item.basis === "source") &&
+        hard.every((item) => item.status !== "met" || item.basis === "source");
 
     if (failed.length > 0) {
         level = "not_eligible";
-    } else if (
-        degreeAndNationality.every((item) => item.status === "met" && item.basis === "source") &&
-        hard.every((item) => item.status !== "met" || item.basis === "source")
-    ) {
+    } else if (requirementsConfirmed && OFFICIAL_SOURCE_TYPES.includes(scholarship.sourceType)) {
         level = "verified";
     } else {
         level = "preliminary";
+
+        // Quotes from aggregators or unknown sites are useful, but not proof.
+        if (requirementsConfirmed) {
+            note = "The requirements were read from a third-party or unverified website, so they are not treated as verified. Check them on the official website.";
+        }
     }
 
     return {
         level,
         label: MATCH_LABELS[level],
         eligibilityStatus: LEVEL_TO_STATUS[level],
+        note,
         checks,
         aiAssessment: scholarship.aiAssessment ?? null
     };

@@ -85,6 +85,14 @@ describe("ScholarshipDetails", () => {
         expect(screen.getByText("Official scholarship programme")).toBeInTheDocument();
     });
 
+    it("explains why requirements from a third-party page are not verified", () => {
+        renderDetails(thirdPartyScholarship({
+            match: { level: "preliminary", note: "The requirements were read from a third-party or unverified website, so they are not treated as verified. Check them on the official website.", checks: [] }
+        }));
+
+        expect(screen.getByText(/read from a third-party or unverified website/)).toBeInTheDocument();
+    });
+
     it("works with results in the older format", () => {
         renderDetails(legacyScholarship({ reasons: ["Looks relevant."] }));
 

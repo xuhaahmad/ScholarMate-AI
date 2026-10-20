@@ -260,6 +260,19 @@ test("matching: hard requirements that are not met make a student not eligible",
     })).level, "not_eligible");
 });
 
+test("matching: quotes from third-party or unverified sites never give a verified match", () => {
+    for (const sourceType of ["third_party", "unknown"]) {
+        const match = matchScholarship(STUDENT, scholarship({ sourceType }));
+
+        assert.equal(match.level, "preliminary", sourceType);
+        assert.equal(match.eligibilityStatus, "unclear");
+        assert.match(match.note, /third-party or unverified website/);
+    }
+
+    assert.equal(matchScholarship(STUDENT, scholarship({ sourceType: "university" })).level, "verified");
+    assert.equal(matchScholarship(STUDENT, scholarship({ sourceType: "government" })).note, null);
+});
+
 test("matching: AI-only or unknown requirements stay preliminary", () => {
     assert.equal(matchScholarship(STUDENT, scholarship({ evidenceVerified: { degree: false } })).level, "preliminary");
     assert.equal(matchScholarship(STUDENT, scholarship({ nationality: { type: "unknown" } })).level, "preliminary");

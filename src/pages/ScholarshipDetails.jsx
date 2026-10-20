@@ -405,6 +405,8 @@ function ScholarshipDetails() {
 
                             {MATCH_TEXT[level].detail}
 
+                            {scholarship.match?.note ? ` ${scholarship.match.note}` : ""}
+
                         </p>
 
 
