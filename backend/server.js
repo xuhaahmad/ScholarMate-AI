@@ -10,3 +10,9 @@ const app = createApp();
 // Express app as the request handler, so it must not start a server here.
 // For local development, backend/local-server.js starts the listener.
 export default app;
+
+// Upper bound for one invocation on Vercel. A search is designed to finish in
+// about 50 seconds (20 s web search + 30 s AI budget); see backend/config.js.
+export const config = {
+    maxDuration: 60
+};

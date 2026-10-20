@@ -5,27 +5,21 @@ import OpenAI from "openai";
 import { validateProfile } from "./validation.js";
 import { createRateLimiter } from "./rateLimit.js";
 import { searchScholarships, ServiceError } from "./scholarshipSearch.js";
+import { loadConfig } from "./config.js";
+import { createCache } from "./cache.js";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
 const REQUIRED_ENV_VARS = ["TAVILY_API_KEY", "GROQ_API_KEY"];
 
-const DEFAULT_TIMEOUTS = {
-    search: 15000,
-    ai: 30000
-};
-
-const DEFAULT_RATE_LIMIT = {
-    windowMs: 15 * 60 * 1000,
-    max: 10
-};
+const HOUR = 60 * 60 * 1000;
 
 // The base URLs can be overridden so tests can point the real SDKs at a local mock server.
 export function createTavilyClient(apiKey, { baseURL } = {}) {
     return tavily({ apiKey, apiBaseURL: baseURL });
 }
 
-export function createGroqClient(apiKey, { baseURL = GROQ_BASE_URL, timeout = DEFAULT_TIMEOUTS.ai } = {}) {
+export function createGroqClient(apiKey, { baseURL = GROQ_BASE_URL, timeout = 20000 } = {}) {
     return new OpenAI({
         apiKey,
         baseURL,
@@ -33,6 +27,23 @@ export function createGroqClient(apiKey, { baseURL = GROQ_BASE_URL, timeout = DE
         // Automatic retries could start a new request after the deadline has passed.
         maxRetries: 0
     });
+}
+
+// Local development only: lets `npm run dev:mock` point the real SDKs at local
+// mock providers. Ignored on Vercel, in production, and for non-local hosts.
+export function localOverride(env, name) {
+    const value = env[name];
+
+    if (!value || env.VERCEL === "1" || env.NODE_ENV === "production") {
+        return undefined;
+    }
+
+    try {
+        const url = new URL(value);
+        return ["127.0.0.1", "localhost"].includes(url.hostname) ? value.replace(/\/$/, "") : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 // Rejects request bodies that are not JSON before they reach validation.
@@ -47,17 +58,52 @@ function requireJson(req, res, next) {
     next();
 }
 
+// Profile fields that change the search or the matching (the name does not).
+function resultCacheKey(profile) {
+    const key = (value) => String(value ?? "").trim().toLowerCase();
+
+    return JSON.stringify([
+        key(profile.field), key(profile.degree), key(profile.nationality),
+        key(profile.cgpa), key(profile.cgpaScale), key(profile.destination), key(profile.funding)
+    ]);
+}
+
 // Options exist so tests can inject fake API clients and settings.
 export function createApp(options = {}) {
     const env = options.env ?? process.env;
     const logger = options.logger ?? console;
-    const timeouts = { ...DEFAULT_TIMEOUTS, ...options.timeouts };
+    const config = loadConfig(env, options.config);
 
     const createSearchClient = options.createSearchClient ??
-        ((apiKey) => createTavilyClient(apiKey));
+        ((apiKey) => createTavilyClient(apiKey, { baseURL: localOverride(env, "TAVILY_API_BASE_URL") }));
 
     const createAiClient = options.createAiClient ??
-        ((apiKey) => createGroqClient(apiKey, { timeout: timeouts.ai }));
+        ((apiKey) => createGroqClient(apiKey, {
+            baseURL: localOverride(env, "GROQ_API_BASE_URL") ?? GROQ_BASE_URL,
+            timeout: config.aiRequestTimeoutMs
+        }));
+
+    // Caches are per function instance (see cache.js).
+    const resultCache = createCache({ maxEntries: config.cacheMaxEntries, ttlMs: config.cacheTtlMs });
+    const queryCache = createCache({ maxEntries: config.cacheMaxEntries * 6, ttlMs: config.cacheTtlMs });
+
+    // Searches that reached the providers in the last hour (per instance).
+    const providerSearches = [];
+
+    function reserveProviderSearch() {
+        const cutoff = Date.now() - HOUR;
+
+        while (providerSearches.length > 0 && providerSearches[0] < cutoff) {
+            providerSearches.shift();
+        }
+
+        if (providerSearches.length >= config.maxSearchesPerHour) {
+            logger.error("Hourly search budget reached for this instance.");
+            throw new ServiceError(503, "SEARCH_BUDGET_REACHED", "ScholarMate AI has reached its search limit for now. Please try again later.");
+        }
+
+        providerSearches.push(Date.now());
+    }
 
     // Clients are created on first use so a missing key returns an error
     // response instead of crashing the whole server at startup.
@@ -92,6 +138,7 @@ export function createApp(options = {}) {
 
     // The frontend calls the API from the same origin (Vite proxy locally, Vercel
     // routes in production), so cross-origin access is off unless explicitly allowed.
+    // CORS is not access control: non-browser clients ignore it.
     const allowedOrigins = (env.ALLOWED_ORIGINS ?? "")
         .split(",")
         .map((origin) => origin.trim())
@@ -135,8 +182,8 @@ export function createApp(options = {}) {
         "/api/search-scholarships",
         requireJson,
         createRateLimiter({
-            ...DEFAULT_RATE_LIMIT,
-            ...options.rateLimit,
+            max: options.rateLimit?.max ?? config.rateLimitMax,
+            windowMs: options.rateLimit?.windowMs ?? config.rateLimitWindowMs,
             trustVercelHeaders,
             logger
         }),
@@ -152,15 +199,30 @@ export function createApp(options = {}) {
 
             const { searchClient, aiClient } = getClients();
 
-            const result = await searchScholarships({
-                profile,
-                searchClient,
-                aiClient,
-                timeouts,
-                logger
+            const { value, cached } = await resultCache.getOrLoad(resultCacheKey(profile), async () => {
+                reserveProviderSearch();
+
+                const result = await searchScholarships({
+                    profile,
+                    searchClient,
+                    aiClient,
+                    config,
+                    queryCache,
+                    logger
+                });
+
+                const { usage } = result.coverage;
+                logger.log(
+                    `Search finished in ${result.coverage.durationMs} ms: ${usage.searchQueries} web searches` +
+                    `${usage.tavilyCredits !== null ? ` (${usage.tavilyCredits} credits)` : ""}, ` +
+                    `${usage.aiRequests} AI requests, ${usage.aiInputTokens}+${usage.aiOutputTokens} tokens, ` +
+                    `${result.scholarships.length} scholarships.`
+                );
+
+                return result;
             });
 
-            res.json(result);
+            res.json(cached ? { ...value, coverage: { ...value.coverage, cached: true } } : value);
         }
     );
 

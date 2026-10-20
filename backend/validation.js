@@ -1,9 +1,13 @@
+import { normalizeDegree } from "./searchPlan.js";
+
 // Profile fields accepted from the frontend, with their maximum lengths.
 // Anything else in the request body is ignored so it never reaches the AI prompt.
 const PROFILE_FIELDS = {
     name: 100,
     field: 100,
     cgpa: 20,
+    cgpaScale: 10,
+    nationality: 60,
     country: 100,
     funding: 100,
     degree: 50,
@@ -11,6 +15,8 @@ const PROFILE_FIELDS = {
 };
 
 const DEFAULT_DEGREE = "Bachelor";
+const DEGREE_NAMES = { bachelor: "Bachelor", master: "Master", phd: "PhD" };
+export const CGPA_SCALES = ["4", "5", "10", "100"];
 
 export function validateProfile(body) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -48,11 +54,44 @@ export function validateProfile(body) {
         errors.push("field is required.");
     }
 
+    if (profile.degree) {
+        const degree = normalizeDegree(profile.degree);
+
+        if (degree) {
+            profile.degree = DEGREE_NAMES[degree];
+        } else {
+            errors.push("degree must be Bachelor, Master or PhD.");
+        }
+    }
+
+    if (profile.cgpaScale !== undefined) {
+        // Accept "4.0", "out of 10", "100%" etc.
+        const scale = String(Number.parseFloat(profile.cgpaScale.replace(/[^\d.]/g, "")));
+
+        if (CGPA_SCALES.includes(scale)) {
+            profile.cgpaScale = scale;
+        } else {
+            errors.push("cgpaScale must be 4, 5, 10 or 100.");
+        }
+    }
+
+    if (profile.cgpa !== undefined) {
+        const value = Number(profile.cgpa.replace(",", "."));
+
+        if (!Number.isFinite(value) || value < 0) {
+            errors.push("CGPA must be a number.");
+        } else if (profile.cgpaScale && value > Number(profile.cgpaScale)) {
+            errors.push(`CGPA must not be higher than the scale (${profile.cgpaScale}).`);
+        } else {
+            profile.cgpa = String(value);
+        }
+    }
+
     if (errors.length > 0) {
         return { errors };
     }
 
-    // The profile form does not collect a degree yet, so keep the previous default.
+    // Older clients do not send a degree, so keep the previous default.
     profile.degree ??= DEFAULT_DEGREE;
     profile.destination ??= profile.country;
 
