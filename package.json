@@ -5,15 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.js",
+    "dev:mock": "node scripts/dev.js --mock",
     "dev:client": "vite",
     "dev:server": "node --watch backend/local-server.js",
     "start:server": "node backend/local-server.js",
     "build": "vite build",
     "lint": "eslint .",
     "test": "npm run test:backend && npm run test:frontend",
-    "preview": "vite preview",
     "test:backend": "node --test \"backend/**/*.test.js\"",
-    "test:frontend": "vitest run"
+    "test:frontend": "vitest run",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

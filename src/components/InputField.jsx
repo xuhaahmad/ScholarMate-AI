@@ -67,7 +67,8 @@ function InputField({
 
                     required={required}
 
-                    className={FIELD_CLASSES}
+                    // Grey like an input placeholder until a choice is made.
+                    className={`${FIELD_CLASSES} ${value ? "text-text" : "text-gray-400"}`}
 
                 >
 
@@ -77,7 +78,7 @@ function InputField({
 
                     {options.map((option) => (
 
-                        <option key={option.value} value={option.value}>
+                        <option key={option.value} value={option.value} className="text-text">
                             {option.label}
                         </option>
 
