@@ -51,7 +51,7 @@ ScholarMate AI is a research assistant, not an official database. Results are no
 
 - **Hard requirements** (decide eligibility): degree level, nationality, minimum grade, deadline.
 - **Preferences** (affect ranking only): field of study, destination, funding level.
-- **Meets verified requirements:** degree level and nationality are confirmed from source quotes and every other checked requirement is met.
+- **Meets verified requirements:** the source is an official website, degree level and nationality are confirmed from quotes on it that are actually about those requirements, and every other checked requirement is met. Requirements read from third-party or unverified websites give at most a preliminary match.
 - **Preliminary match:** no requirement is known to fail, but some could not be confirmed.
 - **Not eligible:** a stated requirement is not met (including a passed deadline).
 - Grades on different scales (for example 3.5/4 vs 8/10) are not converted, because conversions are not linear; the student is asked to confirm with the provider.
