@@ -1,3 +1,18 @@
+const FIELD_CLASSES = `
+                w-full
+                mt-2
+                border
+                border-gray-200
+                p-4
+                rounded-2xl
+                bg-background
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+                transition
+                `;
+
+
 function InputField({
     icon,
     label,
@@ -5,7 +20,9 @@ function InputField({
     placeholder,
     value,
     onChange,
-    required = false
+    required = false,
+    options,
+    inputMode
 }) {
 
 
@@ -14,7 +31,9 @@ function InputField({
         <div>
 
 
-            <label className="
+            <label
+            htmlFor={name}
+            className="
             font-medium
             text-text
             flex
@@ -33,33 +52,62 @@ function InputField({
 
 
 
-            <input
+            {options ? (
 
-                name={name}
+                // Same look as the text input; used for fixed choices.
+                <select
 
-                placeholder={placeholder}
+                    id={name}
 
-                value={value}
+                    name={name}
 
-                onChange={onChange}
+                    value={value}
 
-                required={required}
+                    onChange={onChange}
 
-                className="
-                w-full
-                mt-2
-                border
-                border-gray-200
-                p-4
-                rounded-2xl
-                bg-background
-                focus:outline-none
-                focus:ring-2
-                focus:ring-primary
-                transition
-                "
+                    required={required}
 
-            />
+                    className={FIELD_CLASSES}
+
+                >
+
+                    <option value="">
+                        {placeholder}
+                    </option>
+
+                    {options.map((option) => (
+
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+
+                    ))}
+
+                </select>
+
+            ) : (
+
+                <input
+
+                    id={name}
+
+                    name={name}
+
+                    placeholder={placeholder}
+
+                    value={value}
+
+                    onChange={onChange}
+
+                    required={required}
+
+                    inputMode={inputMode}
+
+                    className={FIELD_CLASSES}
+
+                />
+
+            )}
 
 
         </div>

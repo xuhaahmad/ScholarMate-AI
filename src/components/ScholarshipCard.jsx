@@ -6,17 +6,33 @@ import {
     Sparkles,
     ExternalLink,
     CheckCircle,
-    AlertCircle
+    AlertCircle,
+    XCircle,
+    ShieldCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+    MATCH_TEXT,
+    matchLevel,
+    deadlineText,
+    sourceText,
+    officialLink,
+    referenceLink,
+    isSpecified
+} from "../utils/scholarshipDisplay";
 
 
 function ScholarshipCard({ scholarship }) {
 
     const navigate = useNavigate();
 
-    const isMatch = scholarship.eligibilityStatus === "likely_match";
-    const isUnclear = scholarship.eligibilityStatus === "unclear";
+    const level = matchLevel(scholarship);
+    const isMatch = level === "verified";
+    const isUnclear = level === "preliminary";
+    const isNotEligible = level === "not_eligible";
+
+    const official = officialLink(scholarship);
+    const reference = referenceLink(scholarship);
 
 
     return (
@@ -93,7 +109,7 @@ function ScholarshipCard({ scholarship }) {
 
                             <CheckCircle size={15} />
 
-                            Likely Match
+                            {MATCH_TEXT.verified.badge}
 
                         </span>
 
@@ -118,7 +134,32 @@ function ScholarshipCard({ scholarship }) {
 
                             <AlertCircle size={15} />
 
-                            Needs Review
+                            {MATCH_TEXT.preliminary.badge}
+
+                        </span>
+
+                    )}
+
+
+                    {isNotEligible && (
+
+                        <span className="
+                        inline-flex
+                        items-center
+                        gap-2
+                        bg-gray-100
+                        text-gray-600
+                        px-3
+                        py-1
+                        rounded-full
+                        text-xs
+                        sm:text-sm
+                        font-medium
+                        ">
+
+                            <XCircle size={15} />
+
+                            {MATCH_TEXT.not_eligible.badge}
 
                         </span>
 
@@ -151,7 +192,7 @@ function ScholarshipCard({ scholarship }) {
 
                         <GraduationCap size={18} />
 
-                        {scholarship.degreeLevel || "Degree not specified"}
+                        {isSpecified(scholarship.degreeLevel) ? scholarship.degreeLevel : "Degree not specified"}
 
                     </p>
 
@@ -180,19 +221,14 @@ function ScholarshipCard({ scholarship }) {
                     font-bold
                     ">
 
-                        {isMatch
-                            ? "Match"
-                            : isUnclear
-                            ? "Review"
-                            : "Not Match"
-                        }
+                        {MATCH_TEXT[level].short}
 
                     </p>
 
 
                     <p className="text-sm">
 
-                        AI Analysis
+                        Eligibility Check
 
                     </p>
 
@@ -215,13 +251,19 @@ function ScholarshipCard({ scholarship }) {
 
                 <Tag
                     icon={<Wallet size={15} />}
-                    text={scholarship.funding || "Funding not specified"}
+                    text={isSpecified(scholarship.funding) ? scholarship.funding : "Funding not specified"}
                 />
 
 
                 <Tag
                     icon={<Calendar size={15} />}
-                    text={scholarship.deadline || "Deadline not specified"}
+                    text={deadlineText(scholarship)}
+                />
+
+
+                <Tag
+                    icon={<ShieldCheck size={15} />}
+                    text={sourceText(scholarship)}
                 />
 
 
@@ -264,16 +306,28 @@ function ScholarshipCard({ scholarship }) {
                 ">
 
 
-                    {scholarship.eligibility?.map(
-                        (requirement, index) => (
+                    {scholarship.eligibility?.length > 0 ? (
 
-                            <li key={index}>
+                        scholarship.eligibility.map(
+                            (requirement, index) => (
 
-                                ✓ {requirement}
+                                <li key={index}>
 
-                            </li>
+                                    ✓ {requirement}
 
+                                </li>
+
+                            )
                         )
+
+                    ) : (
+
+                        <li>
+
+                            No requirements could be confirmed from the source page.
+
+                        </li>
+
                     )}
 
 
@@ -308,7 +362,7 @@ function ScholarshipCard({ scholarship }) {
                     />
 
 
-                    Why AI recommends this
+                    AI's preliminary view
 
 
                 </div>
@@ -321,7 +375,7 @@ function ScholarshipCard({ scholarship }) {
                 leading-relaxed
                 ">
 
-                    {scholarship.explanation || "No explanation available."}
+                    {isSpecified(scholarship.explanation) ? scholarship.explanation : "No explanation available."}
 
                 </p>
 
@@ -331,12 +385,11 @@ function ScholarshipCard({ scholarship }) {
 
             {/* Application Link */}
 
-            {scholarship.applicationLink &&
-                scholarship.applicationLink !== "Not specified" && (
+            {(official || reference) && (
 
                 <a
 
-                    href={scholarship.applicationLink}
+                    href={official ? official.url : reference.url}
 
                     target="_blank"
 
@@ -361,7 +414,9 @@ function ScholarshipCard({ scholarship }) {
 
                 >
 
-                    Apply / Official Link
+                    {official
+                        ? official.isApplication ? "Apply on Official Website" : "Official Information Page"
+                        : `View Source (${reference.label})`}
 
                     <ExternalLink size={17} />
 

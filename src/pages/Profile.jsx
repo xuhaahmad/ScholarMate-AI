@@ -1,7 +1,21 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { User, BookOpen, BarChart3, Globe, Wallet } from "lucide-react";
+import { User, BookOpen, BarChart3, Globe, Wallet, GraduationCap, Flag, Ruler } from "lucide-react";
 import InputField from "../components/InputField";
 import React from "react";
+
+
+const DEGREE_OPTIONS = [
+    { value: "Bachelor", label: "Bachelor's (undergraduate)" },
+    { value: "Master", label: "Master's" },
+    { value: "PhD", label: "PhD (doctoral)" }
+];
+
+const CGPA_SCALE_OPTIONS = [
+    { value: "4", label: "Out of 4.0" },
+    { value: "5", label: "Out of 5.0" },
+    { value: "10", label: "Out of 10" },
+    { value: "100", label: "Percentage (out of 100)" }
+];
 
 
 function Profile() {
@@ -20,7 +34,10 @@ function Profile() {
 
         name: savedProfile?.name || "",
         field: savedProfile?.field || "",
+        degree: savedProfile?.degree || "",
+        nationality: savedProfile?.nationality || "",
         cgpa: savedProfile?.cgpa || "",
+        cgpaScale: savedProfile?.cgpaScale || "",
         country: savedProfile?.country || "",
         funding: savedProfile?.funding || ""
 
@@ -264,6 +281,56 @@ function Profile() {
 
                 <InputField
 
+                    icon={<GraduationCap size={18}/>}
+
+                    label="Degree Level"
+
+                    name="degree"
+
+                    placeholder="Select the degree you want to study"
+
+                    value={profile.degree}
+
+                    onChange={handleChange}
+
+                    options={DEGREE_OPTIONS}
+
+                    required
+
+                />
+
+
+
+
+
+
+
+
+                <InputField
+
+                    icon={<Flag size={18}/>}
+
+                    label="Nationality"
+
+                    name="nationality"
+
+                    placeholder="Example: Pakistani"
+
+                    value={profile.nationality}
+
+                    onChange={handleChange}
+
+                />
+
+
+
+
+
+
+
+
+                <InputField
+
                     icon={<BarChart3 size={18}/>}
 
                     label="CGPA"
@@ -275,6 +342,33 @@ function Profile() {
                     value={profile.cgpa}
 
                     onChange={handleChange}
+
+                    inputMode="decimal"
+
+                />
+
+
+
+
+
+
+
+
+                <InputField
+
+                    icon={<Ruler size={18}/>}
+
+                    label="CGPA Scale"
+
+                    name="cgpaScale"
+
+                    placeholder="Select your grading scale"
+
+                    value={profile.cgpaScale}
+
+                    onChange={handleChange}
+
+                    options={CGPA_SCALE_OPTIONS}
 
                 />
 

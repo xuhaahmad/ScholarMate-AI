@@ -18,5 +18,11 @@ export default defineConfig(({ mode }) => {
         '/api': `http://127.0.0.1:${apiPort}`,
       },
     },
+    // Frontend tests (Vitest). Backend tests run with Node's built-in runner.
+    test: {
+      environment: 'jsdom',
+      include: ['src/**/*.test.{js,jsx}'],
+      setupFiles: ['src/test/setup.js'],
+    },
   }
 })
