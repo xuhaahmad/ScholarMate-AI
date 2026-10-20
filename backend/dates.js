@@ -107,6 +107,13 @@ export function normalizeForMatch(text) {
         .trim();
 }
 
+// Removes quotation marks the AI sometimes wraps around a quote.
+export function unwrapQuote(quote) {
+    return typeof quote === "string"
+        ? quote.trim().replace(/^["'“”‘’«»„\s]+|["'“”‘’«»„\s]+$/g, "")
+        : quote;
+}
+
 // True when the evidence quote is actually present in the source text.
 // Quotes shortened with "..." must have every part present.
 export function quoteInSource(quote, normalizedSource) {
@@ -114,7 +121,7 @@ export function quoteInSource(quote, normalizedSource) {
         return false;
     }
 
-    const parts = quote.split(/\.\.\.|…/).map(normalizeForMatch).filter((part) => part.length > 0);
+    const parts = unwrapQuote(quote).split(/\.\.\.|…/).map(normalizeForMatch).filter((part) => part.length > 0);
 
     if (parts.length === 0 || parts.join(" ").length < 8) {
         return false;
@@ -123,8 +130,16 @@ export function quoteInSource(quote, normalizedSource) {
     return parts.every((part) => part.length >= 4 && normalizedSource.includes(part));
 }
 
-// Accepts a date claimed by the AI only if the quoted source text contains it.
-export function verifiedDate(claim, normalizedSource) {
+// Words that show a quote is about applications, so a programme start date
+// ("the scholarship begins on 1 October") is not mistaken for a deadline.
+export const DATE_CONTEXT = {
+    deadline: /deadline|apply|applica|submi|close|closing|until|no later than|due|bewerbung/i,
+    opening: /open|apply|applica|call for|portal|start accepting|available from|bewerbung/i
+};
+
+// Accepts a date claimed by the AI only if the quoted source text contains it
+// (and, when a context pattern is given, the quote is about applications).
+export function verifiedDate(claim, normalizedSource, context) {
     if (!claim || typeof claim !== "object") {
         return null;
     }
@@ -135,7 +150,11 @@ export function verifiedDate(claim, normalizedSource) {
         return null;
     }
 
-    return extractDates(claim.evidence).has(date) ? date : null;
+    if (context && !context.test(claim.evidence)) {
+        return null;
+    }
+
+    return extractDates(unwrapQuote(claim.evidence)).has(date) ? date : null;
 }
 
 function deadlineEnd(isoDate) {

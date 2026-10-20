@@ -112,6 +112,19 @@ export function siteKey(url) {
     return url.host.toLowerCase().replace(/^www\./, "");
 }
 
+// The organisation-level domain, so www.daad.de and www2.daad.de count as one
+// website (keeps "ac.uk"-style second-level domains together).
+export function baseDomain(url) {
+    const labels = url.hostname.toLowerCase().split(".");
+    const secondLevel = labels[labels.length - 2];
+    const keep = labels.length >= 3 && labels[labels.length - 1].length === 2 &&
+        ["co", "ac", "gov", "edu", "com", "org", "net", "go", "or", "gob", "gouv", "govt"].includes(secondLevel)
+        ? 3
+        : 2;
+
+    return labels.slice(-keep).join(".");
+}
+
 // Identifies a page regardless of #fragment, trailing slash and tracking parameters.
 export function pageKey(url) {
     const params = new URLSearchParams(url.search);
