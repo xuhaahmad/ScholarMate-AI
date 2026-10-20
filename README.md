@@ -32,8 +32,8 @@ ScholarMate AI is a research assistant, not an official database. Results are no
 1. The student fills in the profile (field, degree level, nationality, CGPA and scale, destination, funding preference).
 2. The frontend sends the profile to `POST /api/search-scholarships`.
 3. The backend plans up to 6 web searches for that profile and runs them on Tavily (basic depth, 3 at a time, 20-second budget).
-4. Results are merged and de-duplicated; official sources are ranked first and at most 2 pages per website are kept.
-5. Up to 8 pages are sent to Groq in batches of 4 (30-second budget). The AI must copy word-for-word quotes for every fact.
+4. Results are merged and de-duplicated. Pages are ranked by search relevance, how much they are about scholarships, and whether they are official; pages without scholarship content are skipped and at most 2 pages per website are kept.
+5. Up to 8 pages (the most relevant 2,000 characters of each) are sent to Groq in one request (30-second budget). The AI must copy word-for-word quotes for every fact.
 6. Every result is checked against its page: unnamed scholarships are dropped; dates, requirements, funding, places and links without supporting quotes are hidden or marked unconfirmed.
 7. Each scholarship gets an application status and a match level from rule-based checks, duplicates across pages are merged, and results are ranked.
 8. The response includes coverage information (sources searched and analyzed, notes about anything that failed or was skipped).
@@ -108,19 +108,21 @@ Optional limits (defaults in brackets; values outside the allowed range are clam
 | `SEARCH_RESULTS_PER_QUERY` | 8 | Results per web search |
 | `SEARCH_CONCURRENCY` | 3 | Web searches running at once |
 | `SEARCH_QUERY_TIMEOUT_MS` / `SEARCH_STAGE_BUDGET_MS` | 12000 / 20000 | Time limits for web search |
-| `AI_MAX_SOURCES` / `AI_BATCH_SIZE` | 8 / 4 | Pages analyzed and pages per AI request |
-| `AI_SOURCE_CHAR_LIMIT` / `AI_MAX_OUTPUT_TOKENS` | 3000 / 3000 | Text per page sent to the AI, and AI output limit |
+| `AI_MAX_SOURCES` / `AI_BATCH_SIZE` | 8 / 8 | Pages analyzed and pages per AI request |
+| `AI_SOURCE_CHAR_LIMIT` / `AI_MAX_OUTPUT_TOKENS` | 2000 / 2500 | Text per page sent to the AI, and AI output limit |
 | `AI_REQUEST_TIMEOUT_MS` / `AI_STAGE_BUDGET_MS` | 20000 / 30000 | Time limits for AI analysis |
 | `CACHE_TTL_MS` / `CACHE_MAX_ENTRIES` | 6 hours / 100 | In-memory result cache |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | 6 / 15 minutes | Searches per IP address |
 | `SEARCH_MAX_PER_HOUR` | 60 | Searches that reach the providers, per server instance per hour |
+| `AI_MODEL` | `openai/gpt-oss-20b` | Groq model; `openai/gpt-oss-120b` is also accepted (higher cost, not tested in this project) |
+| `AI_REASONING_EFFORT` | `low` | `low`, `medium` or `high`; only `low` has been tested with real searches |
 
 ## 💰 API usage and cost
 
 Per search that is not served from the cache:
 
 - **Tavily:** up to 6 basic-depth searches = up to 6 credits. Tavily's free tier is 1,000 credits per month (about 160 searches); pay-as-you-go is $0.008 per credit (about $0.05 per search). Tavily's credit documentation lists cost by search depth only; actual credits are reported in the server log after each search.
-- **Groq (`openai/gpt-oss-20b`, $0.075 per million input tokens, $0.30 per million output tokens):** up to 2 requests of roughly 4–6k input and at most 3k output tokens each, about $0.003 per search at most.
+- **Groq (`openai/gpt-oss-20b`, $0.075 per million input tokens, $0.30 per million output tokens):** one request of roughly 5k input and at most 2.5k output tokens, about $0.0012 per search at most. Groq also limits tokens per minute depending on your plan; the defaults keep one search within a small per-minute budget, and if the limit is reached the search returns the results it has and says so. Raise `AI_BATCH_SIZE`, `AI_SOURCE_CHAR_LIMIT` or `AI_MAX_OUTPUT_TOKENS` only if your Groq plan allows more tokens per minute.
 - Identical searches within 6 hours are served from the cache, and web-search results are reused across similar profiles, on the same server instance.
 
 Prices were checked in October 2026 and can change.
@@ -150,7 +152,10 @@ Before deploying:
 ## ⚠️ Known limitations
 
 - Search coverage depends on what Tavily returns; results are never exhaustive.
-- The AI may miss scholarships on long pages, because only the most relevant part of each page (3,000 characters by default) is analyzed.
+- With the default model, real test searches returned 1–4 scholarships per search even when the analyzed pages named more. The AI is conservative and its output varies between runs; only scholarships it extracts and that pass the source checks are shown.
+- Groq occasionally rejects an answer as invalid JSON (HTTP 400); the app uses the attempted answer when it can be parsed and otherwise shows an error with a Retry button.
+- The AI may miss scholarships on long pages, because only the most relevant part of each page (2,000 characters by default) is analyzed.
+- On smaller Groq plans, searches made less than a minute apart can hit Groq's per-minute token limit; the app then shows a "busy" message or partial results.
 - Many university websites outside the recognised domain patterns are shown as "Unverified source" even when they are official.
 - Nationality rules that refer to groups (for example "developing countries" or "Commonwealth countries") cannot be checked automatically and are left as "not confirmed".
 - Rate limits, caches and budgets are per server instance (see Security).

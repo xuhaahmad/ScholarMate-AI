@@ -2,8 +2,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolveCountry, resolveDestination, countryName } from "./countries.js";
-import { classifySource, parseSafeUrl, pageKey } from "./sources.js";
-import { extractDates, verifiedDate, quoteInSource, normalizeForMatch, applicationStatus, intakeYear } from "./dates.js";
+import { classifySource, parseSafeUrl, pageKey, baseDomain } from "./sources.js";
+import { extractDates, verifiedDate, quoteInSource, normalizeForMatch, applicationStatus, intakeYear, DATE_CONTEXT } from "./dates.js";
 import { planSearch, normalizeDegree } from "./searchPlan.js";
 import { matchScholarship, rankScholarship } from "./matching.js";
 import { createCache } from "./cache.js";
@@ -96,6 +96,12 @@ test("sources: URL safety and page identity", () => {
         pageKey(parseSafeUrl("https://www.Example.com/page/?utm_source=x&id=2#top")),
         pageKey(parseSafeUrl("https://example.com/page?id=2"))
     );
+
+    const base = (url) => baseDomain(parseSafeUrl(url));
+    assert.equal(base("https://www2.daad.de/x"), "daad.de");
+    assert.equal(base("https://www.ox.ac.uk/x"), "ox.ac.uk");
+    assert.equal(base("https://cscuk.fcdo.gov.uk/x"), "fcdo.gov.uk");
+    assert.equal(base("https://example.com/x"), "example.com");
 });
 
 // -------------------------------------------------------------------- dates
@@ -124,6 +130,15 @@ test("dates: AI-claimed dates are accepted only when the source quote states the
     assert.equal(verifiedDate(null, source), null);
 });
 
+test("dates: programme start dates are not accepted as application dates", () => {
+    const source = normalizeForMatch("The scholarship usually begins on 1 October 2027. Applications open on 1 August 2026 and close on 15 October 2026.");
+
+    assert.equal(verifiedDate({ date: "2027-10-01", evidence: "The scholarship usually begins on 1 October 2027" }, source, DATE_CONTEXT.opening), null);
+    assert.equal(verifiedDate({ date: "2027-10-01", evidence: "The scholarship usually begins on 1 October 2027" }, source, DATE_CONTEXT.deadline), null);
+    assert.equal(verifiedDate({ date: "2026-08-01", evidence: "Applications open on 1 August 2026" }, source, DATE_CONTEXT.opening), "2026-08-01");
+    assert.equal(verifiedDate({ date: "2026-10-15", evidence: "close on 15 October 2026" }, source, DATE_CONTEXT.deadline), "2026-10-15");
+});
+
 test("dates: quotes are matched loosely on formatting but strictly on content", () => {
     const source = normalizeForMatch("**Eligibility:** Applicants must hold a [bachelor's degree](https://x.org) — any field.");
 
@@ -132,6 +147,10 @@ test("dates: quotes are matched loosely on formatting but strictly on content", 
     assert.equal(quoteInSource("Applicants must hold a master's degree", source), false);
     assert.equal(quoteInSource("Applicants must ... any field", source), true, "ellipsis");
     assert.equal(quoteInSource("degree", source), false, "too short to be evidence");
+    assert.equal(quoteInSource("\"Applicants must hold a bachelor's degree\"", source), true, "wrapped in quotes");
+    assert.equal(quoteInSource("“Applicants must hold a bachelor's degree.”", source), false, "the full stop is not on the page");
+    assert.equal(verifiedDate({ date: "2026-10-31", evidence: "\"Application deadline: 31 October 2026\"" },
+        normalizeForMatch("Application deadline: 31 October 2026.")), "2026-10-31");
     assert.equal(quoteInSource(null, source), false);
 });
 

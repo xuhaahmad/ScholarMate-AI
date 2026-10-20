@@ -50,8 +50,8 @@ const BLOG_PAGE = [
 const SEARCH_RESULTS = {
     usage: { credits: 1 },
     results: [
-        { title: "Top scholarships", url: "https://example.com/germany-scholarships", content: BLOG_PAGE, score: 0.9 },
-        { title: "DAAD", url: "https://www.daad.de/en/scholarship", content: DAAD_PAGE, score: 0.8 }
+        { title: "Top scholarships", url: "https://example.com/germany-scholarships", content: BLOG_PAGE, score: 0.6 },
+        { title: "DAAD", url: "https://www.daad.de/en/scholarship", content: DAAD_PAGE, score: 0.9 }
     ]
 };
 
@@ -234,7 +234,7 @@ test("web searches use basic depth, bounded results and the profile's fields", a
     assert.match(queries, /Pakistan/);
 
     const request0 = aiClient.calls[0];
-    assert.equal(request0.max_completion_tokens, 3000);
+    assert.equal(request0.max_completion_tokens, 2500);
     assert.equal(request0.response_format.type, "json_object");
     assert.equal(request0.messages[0].role, "system");
     assert.match(request0.messages[0].content, /untrusted data/);
@@ -254,6 +254,75 @@ test("scholarships the source pages do not name are removed", async (t) => {
     assert.equal(res.json.scholarships.length, 1);
     assert.equal(res.json.coverage.unsupportedDropped, 1);
     assert.ok(res.json.coverage.notes.some((note) => /removed because the source page did not name them/.test(note)));
+});
+
+test("quotes the AI wraps in quotation marks still count as evidence", async (t) => {
+    const wrap = (quote) => `"${quote}"`;
+    const quoted = {
+        ...DAAD_ITEM,
+        degreeEvidence: wrap(DAAD_ITEM.degreeEvidence),
+        nationality: { ...DAAD_ITEM.nationality, evidence: `“${DAAD_ITEM.nationality.evidence}”` },
+        fundingEvidence: wrap(DAAD_ITEM.fundingEvidence),
+        deadline: { ...DAAD_ITEM.deadline, evidence: wrap(DAAD_ITEM.deadline.evidence) }
+    };
+    const { request } = await startApp(t, { ai: () => aiReply(JSON.stringify({ scholarships: [quoted] })) });
+
+    const [scholarship] = (await search(request)).json.scholarships;
+
+    assert.equal(scholarship.deadlineDate, "2026-11-15");
+    assert.equal(scholarship.funding, "992 euros per month plus insurance");
+    assert.ok(["verified", "not_eligible"].includes(scholarship.match.level));
+    assert.ok(scholarship.evidence.every((item) => !item.quote.startsWith("\"") && !item.quote.startsWith("“")));
+});
+
+test("names found in the page title or with singular/plural differences are kept", async (t) => {
+    const page = {
+        title: "Study scholarships for STEM disciplines - DAAD",
+        url: "https://www2.daad.de/scholarship-database/stem",
+        content: "After the first year of study, your academic achievements will be assessed. Funding must begin in 2027. The programme supports young academics from developing countries in STEM fields.",
+        score: 0.9
+    };
+    const items = [
+        { sourceId: "S1", name: "Study Scholarships for STEM Disciplines", summary: "x", assessment: { status: "unclear", reason: "y" } },
+        { sourceId: "S1", name: "Study Scholarship for STEM Discipline", summary: "x", assessment: { status: "unclear", reason: "y" } },
+        { sourceId: "S1", name: "Quantum Robotics Excellence Award", summary: "x", assessment: { status: "unclear", reason: "y" } }
+    ];
+    const { request } = await startApp(t, {
+        search: () => ({ results: [page] }),
+        ai: () => aiReply(JSON.stringify({ scholarships: items }))
+    });
+
+    const res = await search(request);
+
+    assert.deepEqual(res.json.scholarships.map((item) => item.name), ["Study Scholarships for STEM Disciplines"], "singular variant merged as a duplicate");
+    assert.equal(res.json.coverage.duplicatesMerged, 1);
+    assert.equal(res.json.coverage.unsupportedDropped, 1, "a name the page does not contain is still removed");
+});
+
+test("Groq JSON validation failures recover the attempted answer when it parses", async (t) => {
+    const recovered = await startApp(t, {
+        ai: () => {
+            throw Object.assign(new Error("400 Failed to generate JSON"), {
+                status: 400,
+                error: { code: "json_validate_failed", failed_generation: VALID_AI_JSON }
+            });
+        }
+    });
+    const ok = await search(recovered.request);
+    assert.equal(ok.status, 200);
+    assert.equal(ok.json.scholarships.length, 1);
+
+    const unrecoverable = await startApp(t, {
+        ai: () => {
+            throw Object.assign(new Error("400 Failed to generate JSON"), {
+                status: 400,
+                error: { code: "json_validate_failed", failed_generation: "{\"scholarships\": [ {broken" }
+            });
+        }
+    });
+    const failed = await search(unrecoverable.request);
+    assert.equal(failed.status, 502);
+    assert.equal(failed.json.code, "AI_PROVIDER_ERROR");
 });
 
 test("unverified dates, requirements, funding and places are not presented as facts", async (t) => {
@@ -411,17 +480,28 @@ test("some failed searches still return results, with an honest note", async (t)
     assert.equal(res.json.scholarships.length, 1);
 });
 
-test("AI batches are capped and sequential; a failed batch keeps earlier results", async (t) => {
-    const results = Array.from({ length: 10 }, (_, index) => ({
-        title: `Page ${index}`,
-        url: `https://site${index}.example.org/scholarships`,
-        content: `${DAAD_PAGE}\nPage number ${index}.`,
-        score: 1 - index / 100
-    }));
+const manyPages = (count) => Array.from({ length: count }, (_, index) => ({
+    title: `Page ${index}`,
+    url: `https://site${index}-example.org/scholarships`,
+    content: `${DAAD_PAGE}\nPage number ${index}.`,
+    score: 1 - index / 100
+}));
 
+test("by default all selected sources go to the AI in one request", async (t) => {
+    const { request, aiClient } = await startApp(t, { search: () => ({ results: manyPages(10) }) });
+
+    const res = await search(request);
+
+    assert.equal(aiClient.calls.length, 1);
+    assert.equal(res.json.coverage.sourcesAnalyzed, 8);
+    assert.ok(res.json.coverage.notes.some((note) => /8 of 10 pages found were analyzed/.test(note)));
+});
+
+test("AI batches are sequential; a rate-limited batch stops further requests and keeps earlier results", async (t) => {
     let batch = 0;
     const { request, aiClient } = await startApp(t, {
-        search: () => ({ results }),
+        config: { aiBatchSize: 2 },
+        search: () => ({ results: manyPages(10) }),
         ai: () => {
             batch += 1;
             if (batch === 2) throw Object.assign(new Error("rate limited"), { status: 429 });
@@ -432,10 +512,69 @@ test("AI batches are capped and sequential; a failed batch keeps earlier results
     const res = await search(request);
 
     assert.equal(res.status, 200);
-    assert.equal(aiClient.calls.length, 2, "8 sources in batches of 4");
-    assert.equal(res.json.coverage.sourcesAnalyzed, 4);
-    assert.ok(res.json.coverage.notes.some((note) => /could not be analyzed in time/.test(note)));
-    assert.ok(res.json.coverage.notes.some((note) => /8 of 10 pages found were analyzed/.test(note)));
+    assert.equal(aiClient.calls.length, 2, "no more requests after the rate limit");
+    assert.equal(res.json.coverage.sourcesAnalyzed, 2);
+    assert.ok(res.json.coverage.notes.some((note) => /6 of 8 selected sources could not be analyzed because the AI service's rate limit was reached/.test(note)));
+});
+
+test("pages about scholarships outrank official pages that barely mention one", async (t) => {
+    const coursePage = "Master of Computer Science at TU Example. Language: English. Duration: 4 semesters. A scholarship may be available.".repeat(2);
+    const listPage = `${BLOG_PAGE}\nMore scholarships: stipend, fellowship and scholarship options for every applicant.`;
+    const { request, aiClient } = await startApp(t, {
+        search: () => ({
+            results: [
+                { title: "Course", url: "https://www.daad.de/en/course/123", content: coursePage, score: 0.5 },
+                { title: "List", url: "https://example.com/list", content: listPage, score: 0.5 },
+                { title: "About", url: "https://www.daad.de/en/about", content: "About DAAD. ".repeat(30), score: 0.9 }
+            ]
+        })
+    });
+
+    await search(request);
+
+    const sent = [...userPrompt(aiClient.calls[0]).matchAll(/"url": "([^"]+)"/g)].map((match) => match[1]);
+    assert.deepEqual(sent, ["https://example.com/list", "https://www.daad.de/en/course/123"], "page without scholarship content is skipped");
+});
+
+test("page text sent to the AI drops menus, images and link targets but keeps link checks", async (t) => {
+    const navigation = Array.from({ length: 30 }, (_, index) =>
+        `* [Scholarships menu item ${index}](https://www.daad.de/en/menu/scholarships/${index}/) [Study](https://www.daad.de/en/study/${index}/)`).join("\n");
+    const markdown = [
+        navigation,
+        "![DAAD logo](https://www.daad.de/logo.png)",
+        "## DAAD Study Scholarships for Graduates of All Disciplines",
+        "The DAAD Study Scholarship supports international graduates who want to complete a master's degree programme in Germany.",
+        "Application deadline: 15 November 2026. [Apply online](https://www.daad.de/en/apply/portal)"
+    ].join("\n");
+
+    const { request, aiClient } = await startApp(t, {
+        search: () => ({ results: [{ title: "DAAD", url: "https://www.daad.de/en/scholarship", content: "DAAD scholarships overview.", rawContent: markdown, score: 0.9 }] })
+    });
+
+    const res = await search(request);
+    const prompt = userPrompt(aiClient.calls[0]);
+
+    assert.ok(prompt.includes("complete a master's degree programme in Germany"), "real content reaches the AI");
+    assert.ok(prompt.includes("Application deadline: 15 November 2026. Apply online"));
+    assert.ok(!prompt.includes("menu item"), "navigation menus are dropped");
+    assert.ok(!prompt.includes("/en/menu/") && !prompt.includes("logo.png"), "link targets and images are dropped");
+    assert.equal(res.json.scholarships[0].applicationLinkStatus, "official", "links are still checked against the full page");
+});
+
+test("subdomains of one website share the per-website limit", async (t) => {
+    const { request, aiClient } = await startApp(t, {
+        search: () => ({
+            results: ["https://www.daad.de/a", "https://www2.daad.de/b", "https://daad.de/c", "https://example.com/d"].map((url, index) => ({
+                title: `Page ${index}`, url, content: DAAD_PAGE, score: 0.9 - index / 10
+            }))
+        })
+    });
+
+    await search(request);
+
+    const sent = [...userPrompt(aiClient.calls[0]).matchAll(/"url": "([^"]+)"/g)].map((match) => match[1]);
+    assert.equal(sent.filter((url) => url.includes("daad.de")).length, 2);
+    assert.ok(sent.includes("https://example.com/d"));
 });
 
 // ---------------------------------------------------------------------------
@@ -1048,7 +1187,7 @@ test("real SDKs: a successful search works end to end against local mocks", asyn
     const groqBody = JSON.parse(groqMock.requests[0].body);
     assert.equal(groqBody.model, "openai/gpt-oss-20b");
     assert.equal(groqBody.reasoning_effort, "low");
-    assert.equal(groqBody.max_completion_tokens, 3000);
+    assert.equal(groqBody.max_completion_tokens, 2500);
     assert.deepEqual(groqBody.response_format, { type: "json_object" });
 });
 
@@ -1072,6 +1211,26 @@ test("real SDKs: a Groq timeout aborts the request and sends no retry", async (t
 
     assert.equal(groqMock.requests.length, 1, "exactly one Groq request");
     assert.equal(groqMock.requests[0].closed, true, "the request was aborted, not left running");
+});
+
+test("real SDKs: Groq's json_validate_failed error body is recovered", async (t) => {
+    const { request, groqMock } = await startAppWithRealSdks(t, {
+        tavilyHandler: respondJson(200, TAVILY_OK),
+        groqHandler: respondJson(400, {
+            error: {
+                message: "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.",
+                type: "invalid_request_error",
+                code: "json_validate_failed",
+                failed_generation: VALID_AI_JSON
+            }
+        })
+    });
+
+    const res = await search(request);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.json.scholarships[0].name, DAAD_ITEM.name);
+    assert.equal(groqMock.requests.length, 1, "no extra request was needed");
 });
 
 test("real SDKs: a Groq server error is not retried", async (t) => {
