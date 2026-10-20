@@ -14,6 +14,8 @@ import { normalizeDegree } from "./searchPlan.js";
 
 const HARD = ["degree", "nationality", "grade", "deadline"];
 
+const DEGREE_NAMES = { bachelor: "Bachelor's", master: "Master's", phd: "PhD", any: "all degree levels" };
+
 function check(criterion, status, basis, detail) {
     return { criterion, status, basis, detail, hard: HARD.includes(criterion) };
 }
@@ -30,7 +32,9 @@ function degreeCheck(profile, scholarship) {
     const met = offered.includes(wanted) || offered.includes("any");
 
     return check("degree", met ? "met" : "not_met", basis,
-        met ? `Open to ${wanted === "phd" ? "PhD" : wanted} students.` : `Listed for ${offered.join(", ")} students, not ${wanted}.`);
+        met
+            ? `Open to ${DEGREE_NAMES[wanted]} students.`
+            : `Listed for ${offered.map((level) => DEGREE_NAMES[level] ?? level).join(", ")} students, not ${DEGREE_NAMES[wanted]}.`);
 }
 
 function nationalityCheck(profile, scholarship) {
