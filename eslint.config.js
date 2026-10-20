@@ -19,6 +19,13 @@ export default defineConfig([
     },
   },
   {
+    // Test helpers are never hot-reloaded, so the fast-refresh rule does not apply.
+    files: ['src/test/**/*.{js,jsx}', 'src/**/*.test.{js,jsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
     // The backend, dev scripts and Vite config run in Node.js, not the browser.
     files: ['backend/**/*.js', 'scripts/**/*.js', 'vite.config.js'],
     languageOptions: {

@@ -650,14 +650,14 @@ test("malformed or unexpected AI output returns 502", async (t) => {
 
 test("logs contain counts and timings, never profiles, prompts or keys", async (t) => {
     const { request, logs, errors } = await startApp(t, {
-        env: { TAVILY_API_KEY: "tvly-secret-value", GROQ_API_KEY: "gsk-secret-value" }
+        env: { TAVILY_API_KEY: "fake-tavily-secret", GROQ_API_KEY: "fake-groq-secret" }
     });
 
     await search(request);
 
     const all = [...logs, ...errors].join("\n");
     assert.match(all, /Search finished in \d+ ms: 6 web searches \(6 credits\), 1 AI requests/);
-    for (const secret of ["tvly-secret-value", "gsk-secret-value", "Test Student", "Pakistani", "3.7", "DAAD Study Scholarships"]) {
+    for (const secret of ["fake-tavily-secret", "fake-groq-secret", "Test Student", "Pakistani", "3.7", "DAAD Study Scholarships"]) {
         assert.ok(!all.includes(secret), `logs must not include ${secret}`);
     }
 });

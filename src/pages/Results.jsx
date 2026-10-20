@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Search, Sparkles } from "lucide-react";
 import ScholarshipCard from "../components/ScholarshipCard";
+import { countryOptions, filterScholarships, paginate } from "../utils/resultsView";
+import { formatCgpa } from "../utils/scholarshipDisplay";
 
 function Results() {
 
@@ -11,21 +13,21 @@ const profile = location.state?.profile || {};
 
 const aiScholarships = location.state?.scholarships || [];
 
+const coverage = location.state?.coverage;
+
 const [search, setSearch] = useState("");
 
+const [country, setCountry] = useState("");
+
+const [page, setPage] = useState(1);
+
+// The backend returns scholarships already ranked, so their order is kept.
 const matchedScholarships = aiScholarships.map(
     (scholarship, index) => ({
 
         ...scholarship,
 
-        id: index + 1,
-
-        score:
-            scholarship.eligibilityStatus === "likely_match"
-                ? 100
-                : scholarship.eligibilityStatus === "unclear"
-                ? 50
-                : 0,
+        id: scholarship.id ?? `result-${index}`,
 
         reasons: scholarship.explanation
             ? [scholarship.explanation]
@@ -36,35 +38,30 @@ const matchedScholarships = aiScholarships.map(
 
 
 
-    matchedScholarships.sort(
-        (a,b) => b.score - a.score
-    );
 
 
 
+    const countries = countryOptions(matchedScholarships);
+
+    const filteredScholarships = filterScholarships(matchedScholarships, { search, country });
+
+    const { items: pageItems, page: currentPage, pageCount } = paginate(filteredScholarships, page);
 
 
 
-    const filteredScholarships = matchedScholarships.filter(
-        (scholarship) =>
+    function goToPage(nextPage) {
 
-            scholarship.name
-            .toLowerCase()
-            .includes(search.toLowerCase())
+        setPage(nextPage);
 
-            ||
+        if (typeof window.scrollTo === "function") {
+            try {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            } catch {
+                // Not supported in every environment.
+            }
+        }
 
-            scholarship.country
-            .toLowerCase()
-            .includes(search.toLowerCase())
-
-            ||
-
-            scholarship.university
-            .toLowerCase()
-            .includes(search.toLowerCase())
-
-    );
+    }
 
 
 
@@ -245,7 +242,7 @@ const matchedScholarships = aiScholarships.map(
 
                     label="Field"
 
-                    value={profile.field || "Not specified"}
+                    value={profile.field ? `${profile.field}${profile.degree ? ` (${profile.degree})` : ""}` : "Not specified"}
 
                     />
 
@@ -255,7 +252,7 @@ const matchedScholarships = aiScholarships.map(
 
                     label="CGPA"
 
-                    value={profile.cgpa || "N/A"}
+                    value={formatCgpa(profile)}
 
                     />
 
@@ -319,7 +316,9 @@ relative
 
         value={search}
 
-        onChange={(e)=>setSearch(e.target.value)}
+        onChange={(e)=>{ setSearch(e.target.value); setPage(1); }}
+
+        aria-label="Search scholarships"
 
         className="
         w-full
@@ -339,6 +338,93 @@ relative
 
 
 </div>
+
+
+
+
+{/* Country filter (only when results come from several countries) */}
+
+{countries.length > 1 && (
+
+    <div className="
+    max-w-2xl
+    mx-auto
+    mt-4
+    ">
+
+        <select
+
+            value={country}
+
+            onChange={(e)=>{ setCountry(e.target.value); setPage(1); }}
+
+            aria-label="Filter by country"
+
+            className="
+            w-full
+            bg-white
+            border
+            border-border
+            p-4
+            rounded-2xl
+            focus:outline-none
+            focus:ring-2
+            focus:ring-primary
+            transition
+            "
+
+        >
+
+            <option value="">All countries</option>
+
+            {countries.map((name) => (
+
+                <option key={name} value={name}>
+                    {name}
+                </option>
+
+            ))}
+
+        </select>
+
+    </div>
+
+)}
+
+
+
+
+{/* Search coverage: always honest about what was and was not searched */}
+
+{coverage && (
+
+    <div className="
+    max-w-4xl
+    mx-auto
+    mt-6
+    text-center
+    text-muted
+    text-sm
+    space-y-1
+    ">
+
+        <p>
+            Found {aiScholarships.length} scholarship{aiScholarships.length === 1 ? "" : "s"} from{" "}
+            {coverage.sourcesAnalyzed} analyzed source{coverage.sourcesAnalyzed === 1 ? "" : "s"}
+            {coverage.officialSourcesAnalyzed > 0 ? ` (${coverage.officialSourcesAnalyzed} official)` : ""}.
+        </p>
+
+        {(coverage.notes ?? []).map((note) => (
+
+            <p key={note}>
+                {note}
+            </p>
+
+        ))}
+
+    </div>
+
+)}
 
 
 
@@ -370,7 +456,7 @@ relative
                 filteredScholarships.length > 0 ?
 
 
-                filteredScholarships.map(
+                pageItems.map(
 
 
                     (scholarship)=>(
@@ -448,7 +534,9 @@ relative
                         ">
 
 
-                            Try another search.
+                            {aiScholarships.length > 0
+                                ? "Try another search or country."
+                                : "We could not find scholarships for this profile in the sources we searched. Try a broader field of study or a different destination."}
 
 
                         </p>
@@ -467,6 +555,96 @@ relative
 
 
             </div>
+
+
+
+
+            {/* Pagination */}
+
+            {pageCount > 1 && (
+
+                <div className="
+                max-w-4xl
+                mx-auto
+                mt-10
+                flex
+                items-center
+                justify-center
+                gap-4
+                ">
+
+                    <button
+
+                        type="button"
+
+                        onClick={() => goToPage(currentPage - 1)}
+
+                        disabled={currentPage === 1}
+
+                        className="
+                        bg-white
+                        border
+                        border-border
+                        text-primary
+                        px-5
+                        py-3
+                        rounded-2xl
+                        font-semibold
+                        hover:bg-secondary
+                        transition
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                        "
+
+                    >
+
+                        ← Previous
+
+                    </button>
+
+
+                    <p className="
+                    text-muted
+                    text-sm
+                    ">
+
+                        Page {currentPage} of {pageCount}
+
+                    </p>
+
+
+                    <button
+
+                        type="button"
+
+                        onClick={() => goToPage(currentPage + 1)}
+
+                        disabled={currentPage === pageCount}
+
+                        className="
+                        bg-white
+                        border
+                        border-border
+                        text-primary
+                        px-5
+                        py-3
+                        rounded-2xl
+                        font-semibold
+                        hover:bg-secondary
+                        transition
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                        "
+
+                    >
+
+                        Next →
+
+                    </button>
+
+                </div>
+
+            )}
 
 
 

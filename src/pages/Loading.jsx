@@ -5,7 +5,8 @@ import { AlertTriangle, Brain, RotateCcw, Sparkles, UserPen } from "lucide-react
 
 
 // Stop waiting if the backend never answers, so the spinner cannot run forever.
-const REQUEST_TIMEOUT_MS = 60000;
+// The backend finishes a search in about 50 seconds at most (backend/config.js).
+const REQUEST_TIMEOUT_MS = 75000;
 
 
 function Loading() {
@@ -63,7 +64,8 @@ useEffect(() => {
                     },
                     body: JSON.stringify({
                         ...profile,
-                        degree: "Bachelor",
+                        // Profiles saved before the degree field existed default to Bachelor.
+                        degree: profile.degree || "Bachelor",
                         destination: profile.country
                     }),
                     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
@@ -85,7 +87,8 @@ useEffect(() => {
             navigate("/results", {
                 state: {
                     profile: profile,
-                    scholarships: data.scholarships
+                    scholarships: data.scholarships,
+                    coverage: data.coverage ?? null
                 }
             });
 

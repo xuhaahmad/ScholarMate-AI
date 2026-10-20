@@ -6,8 +6,42 @@ import {
     GraduationCap,
     Sparkles,
     ArrowLeft,
-    ExternalLink
+    ExternalLink,
+    ShieldCheck,
+    Clock
 } from "lucide-react";
+import {
+    MATCH_TEXT,
+    matchLevel,
+    deadlineText,
+    sourceText,
+    officialLink,
+    referenceLink,
+    isSpecified,
+    domainOf
+} from "../utils/scholarshipDisplay";
+
+const CHECK_ICONS = { met: "✓", not_met: "✗", unknown: "?" };
+
+const CHECK_NAMES = {
+    degree: "Degree level",
+    nationality: "Nationality",
+    grade: "Minimum grade",
+    deadline: "Deadline",
+    field: "Field of study",
+    destination: "Destination",
+    funding: "Funding preference"
+};
+
+const EVIDENCE_NAMES = {
+    degree: "Degree level",
+    fields: "Fields",
+    nationality: "Nationality",
+    grade: "Minimum grade",
+    funding: "Funding",
+    deadline: "Deadline",
+    openingDate: "Opening date"
+};
 
 import { motion } from "framer-motion";
 
@@ -86,6 +120,25 @@ function ScholarshipDetails() {
 
     }
 
+
+
+    const level = matchLevel(scholarship);
+
+    const official = officialLink(scholarship);
+
+    const reference = referenceLink(scholarship);
+
+    const checks = Array.isArray(scholarship.match?.checks) ? scholarship.match.checks : [];
+
+    const evidence = Array.isArray(scholarship.evidence) ? scholarship.evidence : [];
+
+    const institution = isSpecified(scholarship.university)
+        ? scholarship.university
+        : isSpecified(scholarship.provider) ? scholarship.provider : "Institution not specified";
+
+    const retrieved = Date.parse(scholarship.retrievedAt)
+        ? new Date(scholarship.retrievedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+        : null;
 
 
 
@@ -190,7 +243,7 @@ function ScholarshipDetails() {
 
                             <Sparkles size={16}/>
 
-                            AI Recommended
+                            {MATCH_TEXT[level].badge}
 
 
                         </div>
@@ -225,7 +278,7 @@ function ScholarshipDetails() {
 
                             <GraduationCap size={18}/>
 
-                            {scholarship.university}
+                            {institution}
 
 
                         </p>
@@ -251,11 +304,11 @@ function ScholarshipDetails() {
 
 
                         <p className="
-                        text-5xl
+                        text-3xl
                         font-bold
                         ">
 
-                            {scholarship.score}%
+                            {MATCH_TEXT[level].short}
 
                         </p>
 
@@ -264,7 +317,7 @@ function ScholarshipDetails() {
                         text-sm
                         ">
 
-                            Match Score
+                            Eligibility Check
 
                         </p>
 
@@ -316,7 +369,18 @@ function ScholarshipDetails() {
                         leading-relaxed
                         ">
 
-                            {scholarship.description}
+                            {isSpecified(scholarship.description) ? scholarship.description : "No summary available."}
+
+                        </p>
+
+
+                        <p className="
+                        text-muted
+                        text-sm
+                        mt-3
+                        ">
+
+                            AI-generated summary of the source page. Confirm all details on the official website.
 
                         </p>
 
@@ -330,7 +394,18 @@ function ScholarshipDetails() {
 
 
 
-                    <Section title="Why ScholarMate AI recommends this">
+                    <Section title="Eligibility Check">
+
+
+                        <p className="
+                        text-muted
+                        text-sm
+                        mb-4
+                        ">
+
+                            {MATCH_TEXT[level].detail}
+
+                        </p>
 
 
                         <ul className="
@@ -339,8 +414,26 @@ function ScholarshipDetails() {
                         ">
 
 
-                            {
-                                scholarship.reasons.map(
+                            {checks.length > 0 ? (
+
+                                checks.map(
+
+                                    (item)=>(
+
+                                        <li key={item.criterion}>
+
+                                            {CHECK_ICONS[item.status] ?? "?"} {CHECK_NAMES[item.criterion] ?? item.criterion}: {item.detail}
+                                            {item.status !== "unknown" && item.basis === "ai" ? " (based on AI reading, not confirmed)" : ""}
+
+                                        </li>
+
+                                    )
+
+                                )
+
+                            ) : (
+
+                                (scholarship.reasons ?? []).map(
 
                                     (reason,index)=>(
 
@@ -353,13 +446,53 @@ function ScholarshipDetails() {
                                     )
 
                                 )
-                            }
+
+                            )}
 
 
                         </ul>
 
 
                     </Section>
+
+
+
+
+                    {evidence.length > 0 && (
+
+                        <Section title="Evidence From the Source">
+
+
+                            <ul className="
+                            space-y-3
+                            text-muted
+                            ">
+
+
+                                {evidence.map(
+
+                                    (item,index)=>(
+
+                                        <li key={index}>
+
+                                            <span className="font-semibold text-text">
+                                                {EVIDENCE_NAMES[item.field] ?? item.field}:
+                                            </span>
+                                            {" "}“{item.quote}”
+
+                                        </li>
+
+                                    )
+
+                                )}
+
+
+                            </ul>
+
+
+                        </Section>
+
+                    )}
 
 
 
@@ -406,22 +539,40 @@ function ScholarshipDetails() {
                         <Info
                         icon={<MapPin/>}
                         label="Country"
-                        value={scholarship.country}
+                        value={isSpecified(scholarship.country) ? scholarship.country : "Not specified"}
                         />
 
 
                         <Info
                         icon={<Wallet/>}
                         label="Funding"
-                        value={scholarship.funding}
+                        value={isSpecified(scholarship.funding) ? scholarship.funding : "Not specified"}
                         />
 
 
                         <Info
                         icon={<Calendar/>}
                         label="Deadline"
-                        value={scholarship.deadline}
+                        value={deadlineText(scholarship)}
                         />
+
+
+                        <Info
+                        icon={<ShieldCheck/>}
+                        label="Source"
+                        value={sourceText(scholarship)}
+                        />
+
+
+                        {retrieved && (
+
+                            <Info
+                            icon={<Clock/>}
+                            label="Information retrieved"
+                            value={retrieved}
+                            />
+
+                        )}
 
 
                     </div>
@@ -430,32 +581,120 @@ function ScholarshipDetails() {
 
 
 
-                    <button
+                    {/* Only a verified official URL is opened; otherwise the button explains why it is unavailable. */}
 
-                    className="
-                    w-full
-                    mt-6
-                    bg-primary
-                    hover:bg-primaryDark
-                    text-white
-                    py-4
-                    rounded-2xl
-                    font-semibold
-                    flex
-                    items-center
-                    justify-center
-                    gap-2
-                    transition
-                    hover:scale-[1.02]
-                    "
+                    {official ? (
 
-                    >
+                        <a
 
-                        Visit Official Website
+                        href={official.url}
 
-                        <ExternalLink size={18}/>
+                        target="_blank"
 
-                    </button>
+                        rel="noopener noreferrer"
+
+                        className="
+                        w-full
+                        mt-6
+                        bg-primary
+                        hover:bg-primaryDark
+                        text-white
+                        py-4
+                        rounded-2xl
+                        font-semibold
+                        flex
+                        items-center
+                        justify-center
+                        gap-2
+                        transition
+                        hover:scale-[1.02]
+                        "
+
+                        >
+
+                            Visit Official Website
+
+                            <ExternalLink size={18}/>
+
+                        </a>
+
+                    ) : (
+
+                        <button
+
+                        type="button"
+
+                        disabled
+
+                        className="
+                        w-full
+                        mt-6
+                        bg-primary
+                        text-white
+                        py-4
+                        rounded-2xl
+                        font-semibold
+                        flex
+                        items-center
+                        justify-center
+                        gap-2
+                        transition
+                        opacity-60
+                        cursor-not-allowed
+                        "
+
+                        >
+
+                            Official Website Not Verified
+
+                        </button>
+
+                    )}
+
+
+
+
+                    {official && (
+
+                        <p className="
+                        text-muted
+                        text-sm
+                        mt-3
+                        text-center
+                        ">
+
+                            {official.isApplication ? "Application page" : "Official information page"} on {domainOf(official.url)}
+
+                        </p>
+
+                    )}
+
+
+
+
+                    {reference && (
+
+                        <p className="
+                        text-muted
+                        text-sm
+                        mt-3
+                        text-center
+                        ">
+
+                            We could not confirm an official link.{" "}
+
+                            <a
+                            href={reference.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline"
+                            >
+                                View the source page ({reference.label}, {domainOf(reference.url)})
+                            </a>
+
+                        </p>
+
+                    )}
 
 
 
