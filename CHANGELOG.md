@@ -9,7 +9,23 @@ All notable changes to ScholarMate AI are documented here.
 - **X.Y.Z** — Bug fixes and minor corrections
 
 
-## [2.0.0] — Unreleased
+## [2.1.0] — Unreleased
+
+### Added
+- Checked official sources for 10 study destinations (Germany, United Kingdom, United States, Australia, Canada, South Korea, Japan, France, Italy, Turkey): 42 official programme and university funding pages with quoted facts and the date they were checked (`backend/officialSources.js`).
+- Official pages are read live at search time (directly, or through Tavily Extract for sites that block automated requests), and every checked programme for the destination is listed even when the AI or web search is unavailable.
+- Application status OPEN / UPCOMING / CLOSING SOON / CLOSED / UNKNOWN with the provider's time zone where known.
+- Closed rounds stay visible with a clear message and the next application cycle (confirmed, tentative with its basis, or not yet announced).
+- "Application Status" section on the details page; "Visit Official Scholarship Page" is shown instead of "Apply" for closed or not-yet-open rounds.
+- Destination suggestions on the profile form.
+
+### Changed
+- Match labels are now "Confirmed Eligibility", "Preliminary Match" and "Does Not Meet Stated Requirements"; a closed round is no longer treated as an eligibility failure.
+- Fewer web searches (4) when official pages already cover the chosen country.
+- Results whose names do not look like scholarships are dropped.
+
+
+## [2.0.0]
 
 ### Security
 - Removed the public `/api/test-grok` and `/api/test-analysis` endpoints.

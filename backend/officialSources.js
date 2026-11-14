@@ -37,6 +37,22 @@ export const OFFICIAL_SOURCES = [
         funding: { text: "300 euros per month", evidence: "300 euros per month for international top-class talent" }
     },
     {
+        id: "boell-foundation", kind: "programme", country: "DE", fetch: "direct",
+        name: "Heinrich Böll Foundation Scholarships", provider: "Heinrich Böll Foundation",
+        url: "https://www.boell.de/en/applying-scholarship",
+        degreeLevels: ["bachelor", "master", "phd"],
+        degreeEvidence: "The Heinrich Böll Foundation's Scholarship Program awards undergraduate and doctoral scholarships to German and international students and doctoral candidates.",
+        howToApply: { text: "Two application rounds a year, with deadlines on 1 March and 1 September. From 1 March 2027 Master's applications are limited (see the official page).", evidence: "Each year, we run two application procedures. The deadlines are 1 March and 1 September" }
+    },
+    {
+        id: "kas-international", kind: "programme", country: "DE", fetch: "direct",
+        name: "Konrad-Adenauer-Stiftung Scholarships for International Students", provider: "Konrad-Adenauer-Stiftung",
+        url: "https://www.kas.de/en/web/jordanien/static-contents-detail/-/content/scholarships-for-study-and-research-in-germany-6",
+        degreeLevels: ["master", "phd"],
+        degreeEvidence: "The standard funding periods are two years (Master) respectively three years (PhD).",
+        funding: { text: "850 euros per month (Master's), 1,200 euros per month (PhD)", evidence: "for Master students 850 Euro per month, for PhD students 1.200 Euro per month" }
+    },
+    {
         id: "tum-scholarships", kind: "directory", country: "DE", fetch: "direct",
         name: "Technical University of Munich scholarships", institution: "Technical University of Munich",
         url: "https://www.tum.de/en/studies/fees-and-financial-aid/scholarships"
@@ -200,6 +216,15 @@ export const OFFICIAL_SOURCES = [
         howToApply: { text: "Selected on the recommendation of a Japanese Embassy/Consulate, a university or an authority.", evidence: "selected on the recommendation of Japanese Embassy/Consulate General, University, or Authority" }
     },
     {
+        id: "jasso-honors", kind: "programme", country: "JP", fetch: "direct", timezone: "Asia/Tokyo",
+        name: "Monbukagakusho Honors Scholarship for Privately-Financed International Students", provider: "JASSO (Japan Student Services Organization)",
+        url: "https://www.jasso.go.jp/en/ryugaku/scholarship_j/shoreihi/about.html",
+        degreeLevels: ["bachelor", "master"],
+        degreeEvidence: "Graduate/undergraduate level : 48,000 yen per month",
+        funding: { text: "48,000 yen per month", evidence: "Graduate/undergraduate level : 48,000 yen per month" },
+        howToApply: { text: "Apply through your school in Japan; not every school can recommend students.", evidence: "Please note that depending on your educational institution, you may not be able to apply." }
+    },
+    {
         id: "kyoto-mext", kind: "directory", country: "JP", fetch: "direct",
         name: "Kyoto University: MEXT scholarship information", institution: "Kyoto University",
         url: "https://www.kyoto-u.ac.jp/en/education-campus/procedures/scholarships/mext"
@@ -293,6 +318,8 @@ export const SUPPORTED_COUNTRIES = ["DE", "GB", "US", "AU", "CA", "KR", "JP", "F
 // Domain -> source type for official sites that do not follow the
 // government/academic domain patterns in sources.js.
 export const REGISTRY_DOMAINS = {
+    "boell.de": "official_program",
+    "kas.de": "official_program",
     "tum.de": "university",
     "deutschlandstipendium.de": "government",
     "utoronto.ca": "university",

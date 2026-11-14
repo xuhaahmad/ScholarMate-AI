@@ -1,26 +1,26 @@
 # 🎓 ScholarMate AI
 
-ScholarMate AI helps students discover scholarships that fit their academic profile. It searches real web sources, extracts scholarship details with AI, checks those details against the source pages, and matches them to the student's degree level, nationality, grades, field and preferences.
+ScholarMate AI helps students discover real scholarships from universities, governments and official scholarship programmes. It reads official scholarship pages and searches the web, extracts details with AI, keeps only what the pages actually say, and matches the results to the student's degree level, nationality, grades, field and preferences.
 
 ScholarMate AI is a research assistant, not an official database. Results are not exhaustive, and students should always confirm details on the official scholarship website before applying.
 
 ## ✨ Features
 
-- 🔍 **Live scholarship search** across up to 6 targeted web searches per request (government programmes, universities, official portals, nationality-specific and funding-specific schemes)
-- 🌍 **Destination coverage** for the USA, Canada, the UK, Germany, France, Italy, Austria, Switzerland, Denmark, Norway, Sweden, Finland and other European countries, Turkey, South Korea, Japan, China, Australia, New Zealand and more, or across all regions when no destination is chosen
-- ✅ **Source verification**: scholarships the AI mentions but the source page does not name are removed, and deadlines, funding, requirements and links are only shown when a quote from the source supports them
-- 🏛️ **Official vs third-party sources** are labelled clearly; third-party pages are never presented as official application pages
-- 🗓️ **Application status** (open, opens soon, closing soon, closed, deadline not confirmed) from verified dates only
-- 🎯 **Transparent matching**: "Meets verified requirements", "Preliminary match" or "Not eligible", with a per-requirement explanation (no fake percentage scores)
-- 🔗 **Official website button** that only opens a verified official URL
-- 📄 Country filter, pagination, honest coverage notes, and clear empty and error states
+- 🏛️ **Checked official sources** for 10 study destinations: Germany, the United Kingdom, the United States, Australia, Canada, South Korea, Japan, France, Italy and Turkey (42 official programme and university funding pages, see [Coverage](#-coverage))
+- 🔍 **Live reading of official pages** at search time, plus up to 6 targeted web searches for anything beyond the checked list
+- ✅ **Grounded results**: every scholarship comes from a real page, and deadlines, funding, requirements and links are only shown when the page supports them with a quote
+- 🗓️ **Application status** (OPEN, UPCOMING, CLOSING SOON, CLOSED, UNKNOWN) from explicit dates, with the provider's time zone where known
+- 🔁 **Closed rounds stay visible** with a clear message and the next application cycle: confirmed when announced, tentative only when the official page documents a yearly pattern, otherwise "not yet announced"
+- 🎯 **Transparent matching**: "Confirmed Eligibility", "Preliminary Match" or "Does Not Meet Stated Requirements", with a per-requirement explanation (no fake percentage scores)
+- 🔗 **Honest links**: the official scholarship page and a verified application page are kept separate, and "Apply" is never offered for a closed or not-yet-open round or for a third-party page
+- 📄 Country filter, pagination, honest coverage notes, and clear loading, empty and error states
 - 📱 Responsive design with Framer Motion animations and Tailwind CSS
 
 ## 🛠️ Tech Stack
 
 - **Frontend:** React 19, Vite 8, Tailwind CSS 4, React Router 7, Framer Motion, Lucide icons
 - **Backend:** Node.js, Express 5 (deployed as a Vercel Node.js function)
-- **Providers:** [Tavily](https://tavily.com) web search, [Groq](https://groq.com) (`openai/gpt-oss-20b`) for extraction
+- **Providers:** [Tavily](https://tavily.com) web search and page extraction, [Groq](https://groq.com) (`openai/gpt-oss-20b`) for extraction
 - **Tests:** Node's built-in test runner (backend), Vitest + Testing Library (frontend)
 
 ## 🚀 Live Demo
@@ -29,32 +29,52 @@ ScholarMate AI is a research assistant, not an official database. Results are no
 
 ## 🧭 How it works
 
-1. The student fills in the profile (field, degree level, nationality, CGPA and scale, destination, funding preference).
+1. The student fills in the profile (field, degree level, nationality, CGPA and scale, preferred country, funding preference).
 2. The frontend sends the profile to `POST /api/search-scholarships`.
-3. The backend plans up to 6 web searches for that profile and runs them on Tavily (basic depth, 3 at a time, 20-second budget).
-4. Results are merged and de-duplicated. Pages are ranked by search relevance, how much they are about scholarships, and whether they are official; pages without scholarship content are skipped and at most 2 pages per website are kept.
-5. Up to 8 pages (the most relevant 2,000 characters of each) are sent to Groq in one request (30-second budget). The AI must copy word-for-word quotes for every fact.
-6. Every result is checked against its page: unnamed scholarships are dropped; dates, requirements, funding, places and links without supporting quotes are hidden or marked unconfirmed.
-7. Each scholarship gets an application status and a match level from rule-based checks, duplicates across pages are merged, and results are ranked.
-8. The response includes coverage information (sources searched and analyzed, notes about anything that failed or was skipped).
+3. The backend picks the checked official sources for that country and degree (`backend/officialSources.js`) and reads up to 5 of those pages live: directly where possible, through Tavily Extract for sites that block automated requests.
+4. At the same time it runs targeted Tavily web searches (basic depth): 4 when official pages already cover the chosen country, otherwise up to 6.
+5. Official pages come first; search results are de-duplicated and ranked by relevance and whether they are official. Up to 8 pages (the most relevant 2,000 characters of each) are sent to Groq in one request.
+6. Every result is checked against its page: unnamed scholarships and things not named like scholarships are dropped; dates, requirements, funding, places and links without supporting quotes are hidden or marked unconfirmed.
+7. Every checked official programme for the destination is listed, enriched with what was read live. If a page or the AI is unavailable, the programme is still shown with the facts checked on its official page.
+8. Each scholarship gets an application status, next-cycle information and a match level; duplicates are merged (the official version wins) and results are ranked.
 
 ### Data rules
 
-- **Grounding:** a scholarship is only kept if its name appears on the page it came from.
-- **Dates:** only complete dates (day, month and year) that appear in a quoted sentence are used. Deadlines are treated as *Anywhere on Earth* (UTC-12): a deadline only counts as passed once that day has ended in every time zone. "Closing soon" means within 30 days.
-- **Official sources:** government domains (`.gov`, `.gov.uk`, `.gc.ca`, `.go.kr`, `.go.jp`, `.gouv.fr`, `.govt.nz`, …), academic domains (`.edu`, `.ac.uk`, `.ac.jp`, `.edu.au`, …) and a reviewed list of official programme domains (DAAD, Chevening, Campus France, Study in Korea, Türkiye Burslari, …) count as official. Known aggregators and blogs are labelled third-party. Every other site is "Unverified source"; nothing is assumed official.
-- **Application links** are only shown as official when they are on an official domain and either on a site that was actually retrieved or linked from the retrieved page.
-- **Retrieval time** shows when the page was fetched. It is not proof that the information is still correct.
+- **Grounding:** a scholarship is only kept if its name appears on the page it came from (or it is a checked official programme).
+- **Official source list:** each entry records the official URL, the provider, the date it was checked, and facts copied from the page with the exact quote. A test checks that every quote and date is consistent. It is not a scholarship database: current details are read live.
+- **Dates:** only complete dates (day, month and year) that appear in a quoted sentence about applications are used; a course or funding start date is never treated as an application date. Dates from the last check of an official page are used only for the current round (deadlines older than about 9 months are ignored).
+- **Deadlines and time zones:** when the provider's time zone is known (for example Toronto or Seoul), a deadline ends at midnight there; otherwise it is treated as *Anywhere on Earth* (UTC-12). "Closing soon" means within 30 days.
+- **Next application cycle:** *confirmed* when the source announces a future opening date; *tentative* only when the official page states a yearly pattern or the previous round's dates (the quote is shown with the estimate); otherwise "Next application opening date has not yet been announced."
+- **Official sources:** government domains (`.gov`, `.gov.uk`, `.gc.ca`, `.go.kr`, `.go.jp`, `.gouv.fr`, `.govt.nz`, …), academic domains (`.edu`, `.ac.uk`, `.ac.jp`, `.edu.au`, …), checked university sites and a reviewed list of official programme domains count as official. Known aggregators and blogs are labelled third-party. Every other site is "Unverified source"; nothing is assumed official.
+- **Links:** the official scholarship page and the application page are stored separately. An application link is only shown as official when it is on an official domain and on a retrieved site or linked from the retrieved page.
 - **AI text** (summaries and the "AI's preliminary view") is labelled as AI-generated.
 
 ### Matching rules
 
-- **Hard requirements** (decide eligibility): degree level, nationality, minimum grade, deadline.
-- **Preferences** (affect ranking only): field of study, destination, funding level.
-- **Meets verified requirements:** the source is an official website, degree level and nationality are confirmed from quotes on it that are actually about those requirements, and every other checked requirement is met. Requirements read from third-party or unverified websites give at most a preliminary match.
-- **Preliminary match:** no requirement is known to fail, but some could not be confirmed.
-- **Not eligible:** a stated requirement is not met (including a passed deadline).
-- Grades on different scales (for example 3.5/4 vs 8/10) are not converted, because conversions are not linear; the student is asked to confirm with the provider.
+- **Eligibility requirements:** degree level, nationality, minimum grade (compared only on the same grading scale).
+- **Timing and preferences** (affect ranking only): application status, field of study, destination, funding level. A closed round is shown with its status, never as "not eligible".
+- **Confirmed Eligibility:** the source is official, degree level and nationality are confirmed by on-topic quotes from it, and every other checked requirement is met. Other conditions may still apply.
+- **Preliminary Match:** no stated requirement fails, but some could not be confirmed.
+- **Does Not Meet Stated Requirements:** a requirement stated on the source page conflicts with the profile.
+
+## 🌍 Coverage
+
+Official pages were checked on 13 November 2026 (they load and describe the scholarship). Named programmes are shown as results; university funding pages are searched for named scholarships.
+
+| Country | Named official programmes | University / government funding pages |
+| --- | --- | --- |
+| Germany | DAAD scholarships, Deutschlandstipendium, Heinrich Böll Foundation, Konrad-Adenauer-Stiftung | Technical University of Munich |
+| United Kingdom | Chevening, Gates Cambridge, Commonwealth Master's and PhD Scholarships | Imperial College London, University of Edinburgh |
+| United States | Fulbright Foreign Student Program, Knight-Hennessy Scholars (Stanford), Harvard College financial aid, MIT Scholarships | Yale undergraduate financial aid |
+| Australia | Australia Awards, Melbourne Research Scholarship, ANU Chancellor's International Scholarship | University of Sydney |
+| Canada | U of T Lester B. Pearson Scholarships, McGill Major Entrance Scholarships | University of Waterloo, UBC, EduCanada |
+| South Korea | Global Korea Scholarship (graduate and undergraduate) | Korea University Graduate School |
+| Japan | MEXT Scholarship, JASSO Monbukagakusho Honors Scholarship | Kyoto University, University of Tokyo, Study in Japan |
+| France | Eiffel Excellence Scholarship, Sciences Po Émile Boutmy, Université Paris-Saclay International Master's Scholarships | |
+| Italy | Invest Your Talent in Italy, Padua International Excellence Scholarship | Politecnico di Milano, University of Bologna |
+| Turkey | Türkiye Scholarships | Koç University, Sabancı University |
+
+Not included because the official page could not be read reliably or was not current: University of Oxford (Clarendon) and Monash (blocked even for page extraction), Vanier Canada Graduate Scholarships (the page says it no longer accepts applications). Other countries can still be searched on the web.
 
 ## 📦 Installation
 
@@ -99,6 +119,7 @@ Environment variables (names only; never commit real values):
 | `API_PORT` | No | Local backend port (default 5000) |
 | `ALLOWED_ORIGINS` | No | Comma-separated origins allowed to call the API from another website. Leave empty: the frontend uses the same origin. |
 | `TAVILY_RAW_CONTENT` | No | Set to `false` to use only Tavily's short snippets instead of page text |
+| `OFFICIAL_PAGE_FETCH` | No | Set to `false` to list checked official programmes without reading their pages live (used by mock mode) |
 
 Optional limits (defaults in brackets; values outside the allowed range are clamped, see `backend/config.js`):
 
@@ -114,6 +135,9 @@ Optional limits (defaults in brackets; values outside the allowed range are clam
 | `CACHE_TTL_MS` / `CACHE_MAX_ENTRIES` | 6 hours / 100 | In-memory result cache |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | 6 / 15 minutes | Searches per IP address |
 | `SEARCH_MAX_PER_HOUR` | 60 | Searches that reach the providers, per server instance per hour |
+| `OFFICIAL_PAGES_MAX` / `OFFICIAL_PAGE_TIMEOUT_MS` | 5 / 7000 | Official pages read live per search, and the time limit per page |
+| `OFFICIAL_LISTED_MAX` | 10 | Further official programmes listed (with links) without reading their pages |
+| `SEARCH_QUERIES_WITH_OFFICIAL_PAGES` | 4 | Web searches when official pages already cover the chosen country |
 | `AI_MODEL` | `openai/gpt-oss-20b` | Groq model; `openai/gpt-oss-120b` is also accepted (higher cost, not tested in this project) |
 | `AI_REASONING_EFFORT` | `low` | `low`, `medium` or `high`; only `low` has been tested with real searches |
 
@@ -121,7 +145,8 @@ Optional limits (defaults in brackets; values outside the allowed range are clam
 
 Per search that is not served from the cache:
 
-- **Tavily:** up to 6 basic-depth searches = up to 6 credits. Tavily's free tier is 1,000 credits per month (about 160 searches); pay-as-you-go is $0.008 per credit (about $0.05 per search). Tavily's credit documentation lists cost by search depth only; actual credits are reported in the server log after each search.
+- **Official pages:** read directly from the official site at no cost. Sites that block automated requests (for example DAAD and the University of Melbourne) are read through Tavily Extract (basic), which costs 1 credit per 5 pages, so usually at most 1 extra credit per search.
+- **Tavily:** up to 6 basic-depth searches = up to 6 credits (4 when the chosen country is covered by official pages). Tavily's free tier is 1,000 credits per month (about 160 searches); pay-as-you-go is $0.008 per credit (about $0.05 per search). Tavily's credit documentation lists cost by search depth only; actual credits are reported in the server log after each search.
 - **Groq (`openai/gpt-oss-20b`, $0.075 per million input tokens, $0.30 per million output tokens):** one request of roughly 5k input and at most 2.5k output tokens, about $0.0012 per search at most. Groq also limits tokens per minute depending on your plan; the defaults keep one search within a small per-minute budget, and if the limit is reached the search returns the results it has and says so. Raise `AI_BATCH_SIZE`, `AI_SOURCE_CHAR_LIMIT` or `AI_MAX_OUTPUT_TOKENS` only if your Groq plan allows more tokens per minute.
 - Identical searches within 6 hours are served from the cache, and web-search results are reused across similar profiles, on the same server instance.
 
@@ -152,7 +177,10 @@ Before deploying:
 ## ⚠️ Known limitations
 
 - Search coverage depends on what Tavily returns; results are never exhaustive.
-- With the default model, real test searches returned 1–4 scholarships per search even when the analyzed pages named more. The AI is conservative and its output varies between runs; only scholarships it extracts and that pass the source checks are shown.
+- The checked official source list covers 10 destinations and 42 pages; it is not every scholarship. For other countries the app relies on web search, where the AI is conservative and often returns only a few scholarships per search.
+- Facts stored with the official list were checked on 13 November 2026. Live page reading overrides them, but if a page cannot be read the stored facts are shown with their check date, and they can go out of date until the list is checked again.
+- Some official pages describe several scholarships or are long; only the most relevant part is read, so a programme can be listed without its dates (status "UNKNOWN").
+- Tentative next-cycle dates are estimates from the previous round and are labelled as such; providers can change their timetable.
 - Groq occasionally rejects an answer as invalid JSON (HTTP 400); the app uses the attempted answer when it can be parsed and otherwise shows an error with a Retry button.
 - The AI may miss scholarships on long pages, because only the most relevant part of each page (2,000 characters by default) is analyzed.
 - On smaller Groq plans, searches made less than a minute apart can hit Groq's per-minute token limit; the app then shows a "busy" message or partial results.
