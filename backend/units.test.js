@@ -243,12 +243,15 @@ test("matching: source-backed requirements give a verified match", () => {
 
     assert.equal(match.level, "verified");
     assert.equal(match.eligibilityStatus, "likely_match");
-    assert.equal(match.label, "Meets verified requirements");
+    assert.equal(match.label, "Confirmed eligibility");
 });
 
 test("matching: hard requirements that are not met make a student not eligible", () => {
     assert.equal(matchScholarship(STUDENT, scholarship({ degreeLevels: ["phd"] })).level, "not_eligible");
-    assert.equal(matchScholarship(STUDENT, scholarship({ applicationStatus: "closed" })).level, "not_eligible");
+    // A closed round is about timing, not eligibility.
+    const closed = matchScholarship(STUDENT, scholarship({ applicationStatus: "closed" }));
+    assert.equal(closed.level, "verified");
+    assert.equal(statusOf(closed, "deadline"), "not_met");
     assert.equal(matchScholarship(STUDENT, scholarship({
         nationality: { type: "specific", countries: ["Kenya", "Ghana"], evidenceVerified: true }
     })).level, "not_eligible");

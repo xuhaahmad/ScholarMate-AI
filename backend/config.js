@@ -21,6 +21,13 @@ const LIMITS = {
     aiRequestTimeoutMs: { env: "AI_REQUEST_TIMEOUT_MS", default: 20000, min: 3000, max: 60000 },
     aiStageBudgetMs: { env: "AI_STAGE_BUDGET_MS", default: 30000, min: 3000, max: 90000 },
 
+    // Curated official pages (backend/officialSources.js)
+    officialPagesMax: { env: "OFFICIAL_PAGES_MAX", default: 5, min: 0, max: 8 },
+    officialPageTimeoutMs: { env: "OFFICIAL_PAGE_TIMEOUT_MS", default: 7000, min: 2000, max: 20000 },
+    officialListedMax: { env: "OFFICIAL_LISTED_MAX", default: 10, min: 0, max: 25 },
+    // Web searches when official pages already cover the chosen country.
+    queriesWithOfficialPages: { env: "SEARCH_QUERIES_WITH_OFFICIAL_PAGES", default: 4, min: 1, max: MAX_QUERIES_HARD_LIMIT },
+
     // Cost and abuse controls
     cacheTtlMs: { env: "CACHE_TTL_MS", default: 6 * 60 * 60 * 1000, min: 0, max: 24 * 60 * 60 * 1000 },
     cacheMaxEntries: { env: "CACHE_MAX_ENTRIES", default: 100, min: 0, max: 1000 },
@@ -47,6 +54,10 @@ export function loadConfig(env = process.env, overrides = {}) {
     // "markdown" keeps link targets so application URLs can be checked against
     // the page; set TAVILY_RAW_CONTENT=false to only use Tavily's short snippets.
     config.rawContent = env.TAVILY_RAW_CONTENT === "false" ? false : "markdown";
+
+    // Set OFFICIAL_PAGE_FETCH=false to list curated programmes without reading
+    // their pages live (used by local mock mode).
+    config.officialPageFetch = env.OFFICIAL_PAGE_FETCH !== "false";
 
     // Only known Groq models and reasoning levels are accepted.
     config.aiModel = AI_MODELS.includes(env.AI_MODEL) ? env.AI_MODEL : AI_MODELS[0];

@@ -5,15 +5,18 @@ import { normalizeDegree } from "./searchPlan.js";
 // - Each criterion is checked separately and reports met / not_met / unknown,
 //   plus whether the scholarship requirement was backed by a quote found in
 //   the source page ("source") or only stated by the AI ("ai").
-// - Hard criteria (degree, nationality, minimum grade, deadline) decide
-//   eligibility. Preferences (field, destination, funding) only affect ranking.
+// - Hard criteria (degree, nationality, minimum grade) decide eligibility.
+//   The deadline and preferences (field, destination, funding) only affect
+//   ranking; a closed round is shown with its status, not as "not eligible".
 // - "verified" means every hard criterion that the source states was checked
 //   against on-topic evidence from an OFFICIAL source page and met. Quotes from
 //   third-party or unverified sites at most give a "preliminary" match. It does
 //   not guarantee eligibility: providers may have requirements the page did not list.
 // - Nothing is turned into a percentage score.
 
-const HARD = ["degree", "nationality", "grade", "deadline"];
+// Eligibility requirements. The deadline is about timing, not eligibility: a
+// closed scholarship is still shown (with its status) and ranked lower.
+const HARD = ["degree", "nationality", "grade"];
 
 // Only requirements from these sources can make a match "verified".
 const OFFICIAL_SOURCE_TYPES = ["government", "university", "official_program"];
@@ -104,7 +107,7 @@ function gradeCheck(profile, scholarship) {
 function deadlineCheck(scholarship) {
     switch (scholarship.applicationStatus) {
         case "closed":
-            return check("deadline", "not_met", "source", "The application deadline has passed.");
+            return check("deadline", "not_met", "source", "Applications for this round are closed.");
         case "open":
         case "closing_soon":
         case "upcoming":
@@ -184,9 +187,9 @@ const LEVEL_TO_STATUS = {
 };
 
 export const MATCH_LABELS = {
-    verified: "Meets verified requirements",
+    verified: "Confirmed eligibility",
     preliminary: "Preliminary match",
-    not_eligible: "Not eligible"
+    not_eligible: "Does not meet stated requirements"
 };
 
 export function matchScholarship(profile, scholarship) {

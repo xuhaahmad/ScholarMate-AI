@@ -208,7 +208,9 @@ export function createApp(options = {}) {
                     aiClient,
                     config,
                     queryCache,
-                    logger
+                    logger,
+                    // Tests inject a fake fetch so official pages are never requested for real.
+                    ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
                 });
 
                 const { usage } = result.coverage;

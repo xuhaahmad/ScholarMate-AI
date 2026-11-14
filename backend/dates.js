@@ -157,7 +157,29 @@ export function verifiedDate(claim, normalizedSource, context) {
     return extractDates(unwrapQuote(claim.evidence)).has(date) ? date : null;
 }
 
-function deadlineEnd(isoDate) {
+// Offset of a time zone from UTC (in ms) at a given instant.
+function zoneOffset(time, timeZone) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+    }).formatToParts(new Date(time));
+    const value = (type) => Number(parts.find((part) => part.type === type).value);
+
+    return Date.UTC(value("year"), value("month") - 1, value("day"), value("hour"), value("minute"), value("second")) - time;
+}
+
+function deadlineEnd(isoDate, timeZone) {
+    const endOfDayUtc = Date.parse(`${isoDate}T23:59:59Z`);
+
+    if (timeZone) {
+        try {
+            // 23:59:59 local time in the provider's time zone.
+            return endOfDayUtc - zoneOffset(endOfDayUtc, timeZone) + 999;
+        } catch {
+            // Unknown time zone: fall back to Anywhere on Earth.
+        }
+    }
+
     // End of the day at UTC-12 ("Anywhere on Earth").
     return Date.parse(`${isoDate}T00:00:00Z`) + DAY + 12 * HOUR;
 }
@@ -168,11 +190,11 @@ function openingStart(isoDate) {
 }
 
 // open | upcoming | closing_soon | closed | unknown
-export function applicationStatus({ openingDate, deadlineDate }, now = new Date()) {
+export function applicationStatus({ openingDate, deadlineDate, timeZone }, now = new Date()) {
     const time = now.getTime();
 
     if (deadlineDate) {
-        const end = deadlineEnd(deadlineDate);
+        const end = deadlineEnd(deadlineDate, timeZone);
 
         if (time > end) {
             return "closed";
@@ -199,6 +221,76 @@ export const STATUS_LABELS = {
     closed: "Closed",
     unknown: "Deadline not confirmed"
 };
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// What a student should know about the next application round.
+// - confirmed: the source announces a future opening date.
+// - tentative: estimated from a yearly pattern stated on the official page
+//   (the quote is returned so it can be shown).
+// - unknown: no reliable basis.
+export function nextCycle({ status, openingDate, cycle, sourceUrl }, now = new Date()) {
+    if (openingDate && Date.parse(`${openingDate}T00:00:00Z`) > now.getTime()) {
+        return { type: "confirmed", openingDate, text: `Applications open on ${formatIsoDate(openingDate)}.`, sourceUrl };
+    }
+
+    if (status !== "closed" && status !== "unknown") {
+        return null;
+    }
+
+    const month = now.getUTCMonth() + 1;
+    const year = now.getUTCFullYear();
+
+    if (cycle?.opensMonth) {
+        const basis = cycle.cycleYear
+            ? `Estimated from the ${cycle.cycleYear} application cycle on the official page: “${cycle.evidence}”`
+            : `Estimated from the application period stated on the official page: “${cycle.evidence}”`;
+        const monthsSinceOpening = (month - cycle.opensMonth + 12) % 12;
+
+        // Without dates for this year, a round that usually opened in the last
+        // few months may be open right now.
+        if (status === "unknown" && monthsSinceOpening > 0 && monthsSinceOpening <= 4) {
+            return {
+                type: "tentative",
+                month: MONTH_NAMES[cycle.opensMonth - 1],
+                text: `Applications usually open in ${MONTH_NAMES[cycle.opensMonth - 1]} each year, so the current round may already be open. Check the official page.`,
+                basis,
+                sourceUrl
+            };
+        }
+
+        // The next time that month comes round after the current round closed.
+        const nextYear = status === "closed"
+            ? (cycle.opensMonth > month ? year : year + 1)
+            : (cycle.opensMonth >= month ? year : year + 1);
+
+        return {
+            type: "tentative",
+            month: `${MONTH_NAMES[cycle.opensMonth - 1]} ${nextYear}`,
+            text: `Tentatively expected to open in ${MONTH_NAMES[cycle.opensMonth - 1]} ${nextYear}.`,
+            basis,
+            sourceUrl
+        };
+    }
+
+    if (cycle?.closesMonth && status === "closed") {
+        const nextYear = cycle.closesMonth > month ? year : year + 1;
+
+        return {
+            type: "tentative",
+            month: `${MONTH_NAMES[cycle.closesMonth - 1]} ${nextYear}`,
+            text: `The next deadline is tentatively expected around ${MONTH_NAMES[cycle.closesMonth - 1]} ${nextYear}; the opening date has not been announced.`,
+            basis: `Estimated from the ${cycle.cycleYear ?? "previous"} application cycle on the official page: “${cycle.evidence}”`,
+            sourceUrl
+        };
+    }
+
+    return { type: "unknown", text: "Next application opening date has not yet been announced.", sourceUrl };
+}
+
+export function formatIsoDate(iso) {
+    return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
 
 // Calendar years relevant for upcoming intakes, used in search queries.
 export function intakeYear(now = new Date()) {

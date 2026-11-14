@@ -129,7 +129,10 @@ async function startApp(t, {
         logger: { log: (...args) => logs.push(args.join(" ")), error: (...args) => errors.push(args.join(" ")) },
         createSearchClient: () => searchClient,
         createAiClient: () => aiClient,
-        ...options
+        ...options,
+        // Curated official sources are off unless a test turns them on, so these
+        // tests only see the search and AI fakes (and never fetch real pages).
+        config: { officialPageFetch: false, officialListedMax: 0, ...options.config }
     });
 
     const server = await new Promise((resolve) => {

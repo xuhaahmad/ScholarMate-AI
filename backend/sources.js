@@ -1,5 +1,6 @@
 import { isIP } from "node:net";
 import { allOfficialProgrammeDomains } from "./countries.js";
+import { REGISTRY_DOMAINS } from "./officialSources.js";
 
 // Source types. Only the first three count as official.
 export const SOURCE_TYPES = {
@@ -154,8 +155,13 @@ export function classifySource(value) {
 
     let type = "unknown";
 
+    const registryDomain = Object.keys(REGISTRY_DOMAINS).find((d) => matchesDomain(hostname, d));
+
     if (THIRD_PARTY_DOMAINS.some((d) => matchesDomain(hostname, d))) {
         type = "third_party";
+    } else if (registryDomain) {
+        // Official university or government sites checked for the curated source list.
+        type = REGISTRY_DOMAINS[registryDomain];
     } else if ([...OFFICIAL_PROGRAMME_DOMAINS].some((d) => matchesDomain(hostname, d))) {
         type = "official_program";
     } else if (GOVERNMENT_PATTERNS.some((pattern) => pattern.test(hostname))) {
