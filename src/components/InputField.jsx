@@ -22,7 +22,8 @@ function InputField({
     onChange,
     required = false,
     options,
-    inputMode
+    inputMode,
+    suggestions
 }) {
 
 
@@ -104,9 +105,26 @@ function InputField({
 
                     inputMode={inputMode}
 
+                    list={suggestions ? `${name}-suggestions` : undefined}
+
                     className={FIELD_CLASSES}
 
                 />
+
+            )}
+
+
+            {/* Optional typing suggestions; any other value can still be entered. */}
+
+            {suggestions && !options && (
+
+                <datalist id={`${name}-suggestions`}>
+
+                    {suggestions.map((suggestion) => (
+                        <option key={suggestion} value={suggestion} />
+                    ))}
+
+                </datalist>
 
             )}
 

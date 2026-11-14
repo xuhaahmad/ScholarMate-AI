@@ -10,6 +10,13 @@ const DEGREE_OPTIONS = [
     { value: "PhD", label: "PhD (doctoral)" }
 ];
 
+// Destinations with checked official scholarship sources (backend/officialSources.js).
+// Other countries can still be typed and are searched on the web.
+const SUPPORTED_DESTINATIONS = [
+    "Germany", "United Kingdom", "United States", "Australia", "Canada",
+    "South Korea", "Japan", "France", "Italy", "Turkey"
+];
+
 const CGPA_SCALE_OPTIONS = [
     { value: "4", label: "Out of 4.0" },
     { value: "5", label: "Out of 5.0" },
@@ -388,7 +395,9 @@ function Profile() {
 
                     name="country"
 
-                    placeholder="Example: Germany"
+                    placeholder="Example: Germany (leave empty for any country)"
+
+                    suggestions={SUPPORTED_DESTINATIONS}
 
                     value={profile.country}
 

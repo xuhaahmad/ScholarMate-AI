@@ -20,28 +20,60 @@ export function matchLevel(scholarship) {
 }
 
 export const MATCH_TEXT = {
-    verified: { badge: "Meets Verified Requirements", short: "Verified", detail: "Every requirement we could check against the source page is met." },
+    verified: { badge: "Confirmed Eligibility", short: "Confirmed", detail: "Your profile meets every requirement we could check on the official page. Other conditions may still apply, so read the full rules before applying." },
     preliminary: { badge: "Preliminary Match", short: "Preliminary", detail: "Some requirements could not be confirmed from the source. Check them on the official website." },
-    not_eligible: { badge: "Not Eligible", short: "Not eligible", detail: "At least one stated requirement is not met." }
+    not_eligible: { badge: "Does Not Meet Stated Requirements", short: "Not eligible", detail: "At least one requirement stated on the source page does not match your profile." }
 };
 
 export const STATUS_TEXT = {
-    open: "Open",
-    upcoming: "Opens soon",
-    closing_soon: "Closing soon",
-    closed: "Closed",
-    unknown: "Deadline not confirmed"
+    open: "OPEN",
+    upcoming: "UPCOMING",
+    closing_soon: "CLOSING SOON",
+    closed: "CLOSED",
+    unknown: "UNKNOWN"
 };
 
-export function deadlineText(scholarship) {
-    const deadline = isSpecified(scholarship?.deadline) ? scholarship.deadline : "Deadline not specified";
-    const status = scholarship?.applicationStatus;
+export const STATUS_MESSAGES = {
+    open: "Applications are open.",
+    closing_soon: "Applications are open but close within 30 days.",
+    upcoming: "Applications have not opened yet.",
+    closed: "Applications for this scholarship are currently closed. You can still visit the official website to review eligibility and prepare for the next application cycle.",
+    unknown: "The application dates were not found on the official page we checked. Check the official website for the current dates."
+};
 
-    if (!status || status === "unknown") {
-        return deadline;
+export function applicationStatusOf(scholarship) {
+    return STATUS_TEXT[scholarship?.applicationStatus] ? scholarship.applicationStatus : "unknown";
+}
+
+export function statusText(scholarship) {
+    return `Applications: ${STATUS_TEXT[applicationStatusOf(scholarship)]}`;
+}
+
+export function deadlineText(scholarship) {
+    return isSpecified(scholarship?.deadline) ? `Deadline: ${scholarship.deadline}` : "Deadline: Not announced";
+}
+
+export function formatDate(iso) {
+    if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+        return null;
     }
 
-    return `${deadline} · ${STATUS_TEXT[status]}`;
+    return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+// "Confirmed", "Tentative" or "Not announced" information about the next round.
+export function nextCycleInfo(scholarship) {
+    const cycle = scholarship?.nextCycle;
+
+    if (!cycle || typeof cycle.text !== "string") {
+        return null;
+    }
+
+    return {
+        label: cycle.type === "confirmed" ? "Confirmed" : cycle.type === "tentative" ? "Tentative" : "Not announced",
+        text: cycle.text,
+        basis: typeof cycle.basis === "string" ? cycle.basis : null
+    };
 }
 
 export function sourceText(scholarship) {
@@ -79,9 +111,16 @@ export function officialLink(scholarship) {
         return null;
     }
 
+    const isApplication = scholarship.applicationLinkStatus === "official" && url === safeHttpUrl(scholarship.applicationLink);
+    const status = applicationStatusOf(scholarship);
+
+    // Never invite students to "apply" to a closed or not-yet-open round.
+    const canApply = isApplication && status !== "closed" && status !== "upcoming";
+
     return {
         url,
-        isApplication: scholarship.applicationLinkStatus === "official" && url === safeHttpUrl(scholarship.applicationLink)
+        isApplication,
+        label: canApply ? "Apply on Official Website" : "Visit Official Scholarship Page"
     };
 }
 

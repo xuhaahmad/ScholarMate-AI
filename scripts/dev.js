@@ -18,7 +18,10 @@ if (useMock) {
         TAVILY_API_KEY: "mock-key",
         GROQ_API_KEY: "mock-key",
         TAVILY_API_BASE_URL: mock.tavilyUrl,
-        GROQ_API_BASE_URL: mock.groqUrl
+        GROQ_API_BASE_URL: mock.groqUrl,
+        // Do not request real official pages in mock mode; curated programmes
+        // are listed from their checked facts only.
+        OFFICIAL_PAGE_FETCH: "false"
     };
 
     console.log("Mock mode: using local mock providers. Results are fake test data marked [MOCK].");

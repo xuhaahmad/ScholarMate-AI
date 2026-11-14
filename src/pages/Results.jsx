@@ -411,7 +411,8 @@ relative
         <p>
             Found {aiScholarships.length} scholarship{aiScholarships.length === 1 ? "" : "s"} from{" "}
             {coverage.sourcesAnalyzed} analyzed source{coverage.sourcesAnalyzed === 1 ? "" : "s"}
-            {coverage.officialSourcesAnalyzed > 0 ? ` (${coverage.officialSourcesAnalyzed} official)` : ""}.
+            {coverage.officialSourcesAnalyzed > 0 ? ` (${coverage.officialSourcesAnalyzed} official)` : ""}
+            {coverage.officialProgrammesListed > 0 ? `, including ${coverage.officialProgrammesListed} official programme${coverage.officialProgrammesListed === 1 ? "" : "s"} from checked government and university pages` : ""}.
         </p>
 
         {(coverage.notes ?? []).map((note) => (

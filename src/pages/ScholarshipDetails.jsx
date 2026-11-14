@@ -14,6 +14,11 @@ import {
     MATCH_TEXT,
     matchLevel,
     deadlineText,
+    statusText,
+    applicationStatusOf,
+    nextCycleInfo,
+    formatDate,
+    STATUS_MESSAGES,
     sourceText,
     officialLink,
     referenceLink,
@@ -39,6 +44,7 @@ const EVIDENCE_NAMES = {
     nationality: "Nationality",
     grade: "Minimum grade",
     funding: "Funding",
+    howToApply: "How to apply",
     deadline: "Deadline",
     openingDate: "Opening date"
 };
@@ -139,6 +145,16 @@ function ScholarshipDetails() {
     const retrieved = Date.parse(scholarship.retrievedAt)
         ? new Date(scholarship.retrievedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
         : null;
+
+    const status = applicationStatusOf(scholarship);
+
+    const next = nextCycleInfo(scholarship);
+
+    const openingDate = formatDate(scholarship.openingDate);
+
+    const officialPageChecked = formatDate(scholarship.officialPage?.checkedOn);
+
+    const datesChecked = formatDate(scholarship.datesCheckedOn);
 
 
 
@@ -394,6 +410,95 @@ function ScholarshipDetails() {
 
 
 
+                    <Section title="Application Status">
+
+
+                        <p className="
+                        font-semibold
+                        text-text
+                        ">
+
+                            {statusText(scholarship)}
+
+                        </p>
+
+
+                        <p className="
+                        text-muted
+                        mt-2
+                        ">
+
+                            {STATUS_MESSAGES[status]}
+
+                        </p>
+
+
+                        <ul className="
+                        space-y-2
+                        text-muted
+                        mt-4
+                        ">
+
+                            <li>
+                                Opening date: {openingDate ?? "Not announced"}
+                            </li>
+
+                            <li>
+                                {isSpecified(scholarship.deadline) ? deadlineText(scholarship) : "Deadline: Not announced. Check the official website."}
+                            </li>
+
+                            {next && (
+
+                                <li>
+                                    Next application cycle ({next.label}): {next.text}
+                                </li>
+
+                            )}
+
+                        </ul>
+
+
+                        {next?.basis && (
+
+                            <p className="
+                            text-muted
+                            text-sm
+                            mt-3
+                            ">
+
+                                {next.basis}
+
+                            </p>
+
+                        )}
+
+
+                        {(datesChecked || officialPageChecked) && (
+
+                            <p className="
+                            text-muted
+                            text-sm
+                            mt-3
+                            ">
+
+                                {datesChecked
+                                    ? `Dates taken from the official page as checked on ${datesChecked}; the live page could not confirm them.`
+                                    : `Official page link checked on ${officialPageChecked}.`}
+
+                            </p>
+
+                        )}
+
+
+                    </Section>
+
+
+
+
+
+
+
+
                     <Section title="Eligibility Check">
 
 
@@ -555,7 +660,14 @@ function ScholarshipDetails() {
                         <Info
                         icon={<Calendar/>}
                         label="Deadline"
-                        value={deadlineText(scholarship)}
+                        value={isSpecified(scholarship.deadline) ? scholarship.deadline : "Not announced"}
+                        />
+
+
+                        <Info
+                        icon={<Clock/>}
+                        label="Application status"
+                        value={statusText(scholarship).replace("Applications: ", "")}
                         />
 
 
@@ -614,7 +726,7 @@ function ScholarshipDetails() {
 
                         >
 
-                            Visit Official Website
+                            {official.label}
 
                             <ExternalLink size={18}/>
 
@@ -665,7 +777,7 @@ function ScholarshipDetails() {
                         text-center
                         ">
 
-                            {official.isApplication ? "Application page" : "Official information page"} on {domainOf(official.url)}
+                            {official.isApplication ? "Official application page" : "Official scholarship page"} on {domainOf(official.url)}
 
                         </p>
 

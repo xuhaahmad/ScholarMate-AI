@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
     matchLevel,
     deadlineText,
+    statusText,
     officialLink,
     referenceLink,
     safeHttpUrl,
@@ -19,13 +20,19 @@ describe("scholarshipDisplay", () => {
     });
 
     it("shows deadline status next to the date", () => {
-        expect(deadlineText(scholarship())).toBe("15 November 2026 · Closing soon");
-        expect(deadlineText(thirdPartyScholarship())).toBe("Deadline not specified");
-        expect(deadlineText(legacyScholarship())).toBe("Deadline not specified");
+        expect(deadlineText(scholarship())).toBe("Deadline: 15 November 2026");
+        expect(deadlineText(thirdPartyScholarship())).toBe("Deadline: Not announced");
+        expect(deadlineText(legacyScholarship())).toBe("Deadline: Not announced");
+        expect(statusText(scholarship())).toBe("Applications: CLOSING SOON");
+        expect(statusText(thirdPartyScholarship())).toBe("Applications: UNKNOWN");
+        expect(statusText(legacyScholarship())).toBe("Applications: UNKNOWN");
     });
 
     it("only treats verified official URLs as official", () => {
-        expect(officialLink(scholarship())).toEqual({ url: "https://www.daad.de/en/apply", isApplication: true });
+        expect(officialLink(scholarship())).toEqual({ url: "https://www.daad.de/en/apply", isApplication: true, label: "Apply on Official Website" });
+        expect(officialLink(scholarship({ applicationStatus: "closed" })).label, "never apply to a closed round").toBe("Visit Official Scholarship Page");
+        expect(officialLink(scholarship({ applicationStatus: "upcoming" })).label).toBe("Visit Official Scholarship Page");
+        expect(officialLink(scholarship({ applicationLinkStatus: "unavailable", applicationLink: "Not specified" })).label).toBe("Visit Official Scholarship Page");
         expect(officialLink(thirdPartyScholarship())).toBeNull();
         expect(officialLink(legacyScholarship()), "older results were never verified").toBeNull();
         expect(officialLink(scholarship({ officialUrl: "javascript:alert(1)" }))).toBeNull();

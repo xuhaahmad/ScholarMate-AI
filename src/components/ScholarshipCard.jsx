@@ -8,13 +8,17 @@ import {
     CheckCircle,
     AlertCircle,
     XCircle,
-    ShieldCheck
+    ShieldCheck,
+    Clock
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
     MATCH_TEXT,
     matchLevel,
     deadlineText,
+    statusText,
+    applicationStatusOf,
+    nextCycleInfo,
     sourceText,
     officialLink,
     referenceLink,
@@ -33,6 +37,9 @@ function ScholarshipCard({ scholarship }) {
 
     const official = officialLink(scholarship);
     const reference = referenceLink(scholarship);
+
+    const status = applicationStatusOf(scholarship);
+    const next = nextCycleInfo(scholarship);
 
 
     return (
@@ -262,12 +269,35 @@ function ScholarshipCard({ scholarship }) {
 
 
                 <Tag
+                    icon={<Clock size={15} />}
+                    text={statusText(scholarship)}
+                />
+
+
+                <Tag
                     icon={<ShieldCheck size={15} />}
                     text={sourceText(scholarship)}
                 />
 
 
             </div>
+
+
+            {/* Closed rounds stay visible with what to expect next */}
+
+            {status === "closed" && (
+
+                <p className="
+                mt-4
+                text-muted
+                text-sm
+                ">
+
+                    Applications are currently closed.{next ? ` Next application cycle: ${next.text}` : ""}
+
+                </p>
+
+            )}
 
 
             {/* Eligibility */}
@@ -415,7 +445,7 @@ function ScholarshipCard({ scholarship }) {
                 >
 
                     {official
-                        ? official.isApplication ? "Apply on Official Website" : "Official Information Page"
+                        ? official.label
                         : `View Source (${reference.label})`}
 
                     <ExternalLink size={17} />

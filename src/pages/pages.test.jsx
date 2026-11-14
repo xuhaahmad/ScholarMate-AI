@@ -34,11 +34,11 @@ describe("ScholarshipDetails", () => {
     it("opens the verified official website in a new tab", () => {
         renderDetails(scholarship());
 
-        const link = screen.getByRole("link", { name: /visit official website/i });
+        const link = screen.getByRole("link", { name: /apply on official website/i });
         expect(link).toHaveAttribute("href", "https://www.daad.de/en/apply");
         expect(link).toHaveAttribute("target", "_blank");
         expect(link).toHaveAttribute("rel", "noopener noreferrer");
-        expect(screen.getByText(/application page on daad\.de/i)).toBeInTheDocument();
+        expect(screen.getByText(/official application page on daad\.de/i)).toBeInTheDocument();
     });
 
     it("uses the official information page when there is no official application link", () => {
@@ -48,15 +48,15 @@ describe("ScholarshipDetails", () => {
             officialUrl: "https://www.daad.de/en/scholarship"
         }));
 
-        expect(screen.getByRole("link", { name: /visit official website/i }))
+        expect(screen.getByRole("link", { name: /visit official scholarship page/i }))
             .toHaveAttribute("href", "https://www.daad.de/en/scholarship");
-        expect(screen.getByText(/official information page on daad\.de/i)).toBeInTheDocument();
+        expect(screen.getByText(/official scholarship page on daad\.de/i)).toBeInTheDocument();
     });
 
     it("shows an unavailable state instead of presenting a third-party page as official", () => {
         renderDetails(thirdPartyScholarship());
 
-        expect(screen.queryByRole("link", { name: /visit official website/i })).toBeNull();
+        expect(screen.queryByRole("link", { name: /official website|official scholarship page/i })).toBeNull();
         expect(screen.getByRole("button", { name: /official website not verified/i })).toBeDisabled();
 
         const source = screen.getByRole("link", { name: /view the source page/i });
@@ -74,14 +74,15 @@ describe("ScholarshipDetails", () => {
     it("shows an honest match label, eligibility checks, evidence and summary note instead of a percentage", () => {
         const { container } = renderDetails(scholarship());
 
-        expect(screen.getAllByText("Meets Verified Requirements").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Confirmed Eligibility").length).toBeGreaterThan(0);
         expect(container.textContent).not.toMatch(/\d+%/);
         expect(container.textContent).not.toMatch(/AI Recommended/);
         expect(screen.getByText(/Degree level: Open to master students\./)).toBeInTheDocument();
         expect(screen.getByText(/Destination: In your preferred destination\. \(based on AI reading, not confirmed\)/)).toBeInTheDocument();
         expect(screen.getByText(/“Application deadline: 15 November 2026”/)).toBeInTheDocument();
         expect(screen.getByText(/AI-generated summary of the source page/)).toBeInTheDocument();
-        expect(screen.getByText("15 November 2026 · Closing soon")).toBeInTheDocument();
+        expect(screen.getByText("Applications: CLOSING SOON")).toBeInTheDocument();
+        expect(screen.getByText("Deadline: 15 November 2026")).toBeInTheDocument();
         expect(screen.getByText("Official scholarship programme")).toBeInTheDocument();
     });
 
@@ -118,8 +119,8 @@ describe("ScholarshipCard", () => {
 
     it("labels match levels honestly", () => {
         renderCard(scholarship());
-        expect(screen.getByText("Meets Verified Requirements")).toBeInTheDocument();
-        expect(screen.getByText("Verified")).toBeInTheDocument();
+        expect(screen.getByText("Confirmed Eligibility")).toBeInTheDocument();
+        expect(screen.getByText("Confirmed")).toBeInTheDocument();
         expect(screen.getByText("Eligibility Check")).toBeInTheDocument();
     });
 
@@ -128,7 +129,7 @@ describe("ScholarshipCard", () => {
         expect(screen.getByText("Preliminary Match")).toBeInTheDocument();
 
         renderCard(scholarship({ id: "x", match: { level: "not_eligible", checks: [] }, eligibilityStatus: "not_a_match" }));
-        expect(screen.getByText("Not Eligible")).toBeInTheDocument();
+        expect(screen.getByText("Does Not Meet Stated Requirements")).toBeInTheDocument();
     });
 
     it("links official pages as official and other pages as labelled sources", () => {
