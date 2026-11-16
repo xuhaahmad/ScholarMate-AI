@@ -18,6 +18,7 @@ import {
     applicationStatusOf,
     nextCycleInfo,
     formatDate,
+    datesSourceNote,
     STATUS_MESSAGES,
     sourceText,
     officialLink,
@@ -152,9 +153,7 @@ function ScholarshipDetails() {
 
     const openingDate = formatDate(scholarship.openingDate);
 
-    const officialPageChecked = formatDate(scholarship.officialPage?.checkedOn);
-
-    const datesChecked = formatDate(scholarship.datesCheckedOn);
+    const datesNote = datesSourceNote(scholarship);
 
 
 
@@ -473,7 +472,7 @@ function ScholarshipDetails() {
                         )}
 
 
-                        {(datesChecked || officialPageChecked) && (
+                        {datesNote && (
 
                             <p className="
                             text-muted
@@ -481,9 +480,7 @@ function ScholarshipDetails() {
                             mt-3
                             ">
 
-                                {datesChecked
-                                    ? `Dates taken from the official page as checked on ${datesChecked}; the live page could not confirm them.`
-                                    : `Official page link checked on ${officialPageChecked}.`}
+                                {datesNote}
 
                             </p>
 
@@ -546,7 +543,7 @@ function ScholarshipDetails() {
 
                                         <li key={index}>
 
-                                            ✓ {reason}
+                                            • {reason}
 
                                         </li>
 

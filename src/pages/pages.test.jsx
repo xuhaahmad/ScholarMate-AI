@@ -64,6 +64,13 @@ describe("ScholarshipDetails", () => {
         expect(source.textContent).toMatch(/third-party website/i);
     });
 
+    it("lists AI reasons for older results with neutral markers, not checkmarks", () => {
+        renderDetails(legacyScholarship({ reasons: ["Looks relevant."] }));
+
+        const reason = screen.getByText(/Looks relevant./, { selector: "li" });
+        expect(reason.textContent.trim()).toBe("• Looks relevant.");
+    });
+
     it("never links to unsafe URLs", () => {
         const { container } = renderDetails(scholarship({ officialUrl: "javascript:alert(1)", sourceUrl: "javascript:alert(2)" }));
 
@@ -141,12 +148,32 @@ describe("ScholarshipCard", () => {
             .toHaveAttribute("href", "https://www.scholars4dev.com/germany");
     });
 
-    it("explains when no requirements were confirmed and shows the source type", () => {
+    it("explains when no other requirements were quoted and shows the source type", () => {
         renderCard(thirdPartyScholarship());
 
-        expect(screen.getByText(/No requirements could be confirmed/)).toBeInTheDocument();
+        expect(screen.getByText("No other requirements were quoted from the source page.")).toBeInTheDocument();
         expect(screen.getByText("Third-party website")).toBeInTheDocument();
         expect(screen.getByText("AI's preliminary view")).toBeInTheDocument();
+    });
+
+    it("does not contradict a verified match when no extra requirements were quoted", () => {
+        renderCard(scholarship({ eligibility: [] }));
+
+        expect(screen.getByText("Confirmed Eligibility")).toBeInTheDocument();
+        expect(screen.queryByText(/No requirements could be confirmed/)).toBeNull();
+        expect(screen.getByText("No other requirements were quoted from the source page.")).toBeInTheDocument();
+    });
+
+    it("lists quoted requirements with neutral markers, not checkmarks", () => {
+        renderCard(scholarship({
+            name: "Lester B. Pearson International Student Scholarships",
+            applicationStatus: "closed",
+            eligibility: ["Must submit application by November 6, 2026"]
+        }));
+
+        const requirement = screen.getByText(/Must submit application by November 6, 2026/);
+        expect(requirement.textContent.trim()).toBe("• Must submit application by November 6, 2026");
+        expect(requirement.textContent).not.toContain("✓");
     });
 
     it("opens the details page with the scholarship", async () => {

@@ -421,6 +421,203 @@ test("a deadline stated on the page is used even when it is on a third-party pag
     assert.notEqual(scholarship.applicationStatus, "unknown");
 });
 
+// Accuracy fixes found in real preview searches (November 2026).
+const BOELL_PAGE = [
+    "Heinrich Böll Foundation Scholarships - Applying for a scholarship",
+    "The Heinrich Böll Foundation's Scholarship Program awards undergraduate and doctoral scholarships to German and international students.",
+    "Each year, we run two application procedures. The deadlines are 1 March and 1 September.",
+    "Note for Master's students: Starting March 1, 2027, we will only accept applications for first-cycle programs."
+].join("\n");
+
+const AUCKLAND_PAGE = [
+    "Undergraduate scholarships for international students - The University of Auckland",
+    "Summer Research Scholarships let students work with leading researchers at the University of Auckland.",
+    "Applications for 2026-2027 have now closed.",
+    "International Student Excellence Scholarship: applications close on 1 December 2099."
+].join("\n");
+
+const onePage = (url, content, title = "Scholarships") => () => ({ usage: { credits: 1 }, results: [{ title, url, content, score: 0.9 }] });
+
+test("a policy change that mentions applications is not taken as an opening date", async (t) => {
+    const item = {
+        sourceId: "S1",
+        name: "Heinrich Böll Foundation Scholarships",
+        country: "Germany",
+        openingDate: { date: "2027-03-01", text: "1 March 2027", evidence: "Starting March 1, 2027, we will only accept applications for first-cycle programs" },
+        deadline: { date: null, text: "1 March and 1 September", evidence: "The deadlines are 1 March and 1 September" },
+        summary: "x",
+        assessment: { status: "unclear", reason: "y" }
+    };
+    const { request } = await startApp(t, {
+        search: onePage("https://www.boell.de/en/applying-scholarship", BOELL_PAGE),
+        ai: () => aiReply(JSON.stringify({ scholarships: [item] }))
+    });
+
+    const [scholarship] = (await search(request)).json.scholarships;
+
+    assert.equal(scholarship.openingDate, null);
+    assert.equal(scholarship.applicationStatus, "unknown", "no year-specific dates on the page");
+    assert.ok(!scholarship.evidence.some((entry) => entry.field === "openingDate"));
+});
+
+test("an official 'applications have now closed' statement marks the round closed", async (t) => {
+    const closedItem = {
+        sourceId: "S1",
+        name: "Summer Research Scholarships",
+        country: null,
+        deadline: { date: null, text: "Applications have closed", evidence: "Applications for 2026-2027 have now closed." },
+        summary: "x",
+        assessment: { status: "unclear", reason: "y" }
+    };
+    const futureItem = {
+        ...closedItem,
+        name: "International Student Excellence Scholarship",
+        deadline: { date: null, text: "Closes 1 December", evidence: "applications close on 1 December 2099" }
+    };
+    const { request } = await startApp(t, {
+        search: onePage("https://www.auckland.ac.nz/en/study/scholarships.html", AUCKLAND_PAGE),
+        ai: () => aiReply(JSON.stringify({ scholarships: [closedItem, futureItem] }))
+    });
+
+    const results = (await search(request, { ...PROFILE, degree: "Bachelor", destination: "", country: "" })).json.scholarships;
+    const closed = results.find((item) => item.name === "Summer Research Scholarships");
+    const future = results.find((item) => item.name === "International Student Excellence Scholarship");
+
+    assert.equal(closed.applicationStatus, "closed");
+    assert.notEqual(future.applicationStatus, "closed", "a future closing date is not 'already closed'");
+    assert.equal(closed.country, "New Zealand", "country taken from the official .nz domain");
+
+    // A closed round is about timing, not the applicant: it is never "not eligible".
+    const timing = closed.match.checks.find((item) => item.criterion === "deadline");
+    assert.equal(timing.status, "not_met");
+    assert.equal(timing.hard, false);
+    assert.equal(timing.detail, "Applications for this round are closed.");
+    assert.notEqual(closed.match.level, "not_eligible");
+    assert.equal(closed.nextCycle.type, "unknown", "the next round is not announced on the page");
+    assert.equal(closed.nextCycle.text, "Next application opening date has not yet been announced.");
+});
+
+test("a closure is kept when another scholarship on the same page opens later (M3)", async (t) => {
+    const page = [
+        "Undergraduate scholarships for international students - The University of Auckland",
+        "Summer Research Scholarships",
+        "Summer Research Scholarships let students work with leading researchers at the University of Auckland.",
+        "Applications for 2026-2027 have now closed.",
+        "International Student Excellence Scholarship",
+        "The International Student Excellence Scholarship supports new international undergraduates. Applications open on 1 March 2027."
+    ].join("\n");
+    const item = {
+        sourceId: "S1",
+        name: "Summer Research Scholarships",
+        deadline: { date: null, text: "Closed", evidence: "Applications for 2026-2027 have now closed." },
+        summary: "x",
+        assessment: { status: "unclear", reason: "y" }
+    };
+    const { request } = await startApp(t, {
+        search: onePage("https://www.auckland.ac.nz/en/study/scholarships.html", page),
+        ai: () => aiReply(JSON.stringify({ scholarships: [item] }))
+    });
+
+    const [summer] = (await search(request, { ...PROFILE, degree: "Bachelor", destination: "", country: "" })).json.scholarships;
+    assert.equal(summer.applicationStatus, "closed");
+});
+
+test("an 'open and close on' sentence never gives an opening date (H1)", async (t) => {
+    const page = "Example Excellence Scholarship. Applications are now open and close on 1 March 2027. The scholarship supports international students with full tuition and living costs for the whole programme.";
+    const item = {
+        sourceId: "S1",
+        name: "Example Excellence Scholarship",
+        openingDate: { date: "2027-03-01", text: "1 March 2027", evidence: "Applications are now open and close on 1 March 2027" },
+        deadline: { date: "2027-03-01", text: "1 March 2027", evidence: "Applications are now open and close on 1 March 2027" },
+        summary: "x",
+        assessment: { status: "unclear", reason: "y" }
+    };
+    const { request } = await startApp(t, {
+        search: onePage("https://www.example.ac.uk/scholarships", page),
+        ai: () => aiReply(JSON.stringify({ scholarships: [item] }))
+    });
+
+    const [scholarship] = (await search(request)).json.scholarships;
+    assert.equal(scholarship.openingDate, null);
+    assert.equal(scholarship.deadlineDate, "2027-03-01");
+    assert.notEqual(scholarship.applicationStatus, "upcoming");
+    assert.notEqual(scholarship.nextCycle?.type, "confirmed");
+});
+
+test("dates that an opening expression does not introduce never become opening dates (R4)", async (t) => {
+    const page = "Example Merit Scholarship. Results will be announced on 1 March 2027; applications open on 1 October 2026. The scholarship supports international students with full tuition and living costs for the whole programme.";
+    const claimed = (date, evidence) => ({
+        sourceId: "S1",
+        name: "Example Merit Scholarship",
+        openingDate: { date, text: date, evidence },
+        summary: "x",
+        assessment: { status: "unclear", reason: "y" }
+    });
+
+    const wrong = await startApp(t, {
+        search: onePage("https://www.example.ac.uk/scholarships", page),
+        ai: () => aiReply(JSON.stringify({ scholarships: [claimed("2027-03-01", "Results will be announced on 1 March 2027; applications open on 1 October 2026")] }))
+    });
+    const [results] = (await search(wrong.request)).json.scholarships;
+    assert.equal(results.openingDate, null, "the results date is not an opening date");
+    assert.notEqual(results.nextCycle?.type, "confirmed");
+
+    const right = await startApp(t, {
+        search: onePage("https://www.example.ac.uk/scholarships", page),
+        ai: () => aiReply(JSON.stringify({ scholarships: [claimed("2026-10-01", "Results will be announced on 1 March 2027; applications open on 1 October 2026")] }))
+    });
+    assert.equal((await search(right.request)).json.scholarships[0].openingDate, "2026-10-01");
+});
+
+test("an ambiguous scholarship-name match never confirms a new cycle (R7)", async (t) => {
+    // Known limitation: names are compared by substring, so the opening of the
+    // "Vice-Chancellor's Excellence Scholarship" cancels the closure of the
+    // "Excellence Scholarship". The round then falls back to its dates; nothing
+    // is confirmed for the closed scholarship.
+    const page = [
+        "Excellence Scholarship: Applications for 2026-2027 have now closed.",
+        "Vice-Chancellor's Excellence Scholarship: applications open on 1 March 2027.",
+        "Both scholarships support international undergraduates with tuition and living costs at the university."
+    ].join("\n");
+    const item = {
+        sourceId: "S1",
+        name: "Excellence Scholarship",
+        deadline: { date: null, text: "Closed", evidence: "Applications for 2026-2027 have now closed." },
+        summary: "x",
+        assessment: { status: "unclear", reason: "y" }
+    };
+    const { request } = await startApp(t, {
+        search: onePage("https://www.example.ac.uk/scholarships", page),
+        ai: () => aiReply(JSON.stringify({ scholarships: [item] }))
+    });
+
+    const [excellence] = (await search(request, { ...PROFILE, degree: "Bachelor", destination: "", country: "" })).json.scholarships;
+    assert.equal(excellence.openingDate, null);
+    assert.notEqual(excellence.applicationStatus, "upcoming");
+    assert.notEqual(excellence.nextCycle?.type, "confirmed");
+});
+
+test("a country is never guessed from generic domains and a grounded country is kept", async (t) => {
+    const page = [
+        "Example University Scholarship for international students.",
+        "The Example University Scholarship supports talented international students who want to study in Canada.",
+        "It covers full tuition fees and living costs for the whole programme. Applicants are selected on academic merit."
+    ].join(" ");
+    const item = { sourceId: "S1", name: "Example University Scholarship", country: null, summary: "x", assessment: { status: "unclear", reason: "y" } };
+
+    const generic = await startApp(t, {
+        search: onePage("https://www.example.edu/scholarships", page),
+        ai: () => aiReply(JSON.stringify({ scholarships: [item] }))
+    });
+    assert.equal((await search(generic.request)).json.scholarships[0].country, "Not specified");
+
+    const grounded = await startApp(t, {
+        search: onePage("https://www.example.ac.uk/scholarships", page),
+        ai: () => aiReply(JSON.stringify({ scholarships: [{ ...item, country: "Canada" }] }))
+    });
+    assert.equal((await search(grounded.request)).json.scholarships[0].country, "Canada", "the domain does not overwrite a grounded country");
+});
+
 test("the same scholarship from several pages is merged, keeping the official source", async (t) => {
     const fromBlog = { ...DAAD_ITEM, sourceId: "S2", applicationUrl: null, deadline: { date: null } };
     const { request } = await startApp(t, { ai: () => aiReply(JSON.stringify({ scholarships: [fromBlog, DAAD_ITEM] })) });

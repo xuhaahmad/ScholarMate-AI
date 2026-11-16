@@ -343,7 +343,7 @@ function ScholarshipCard({ scholarship }) {
 
                                 <li key={index}>
 
-                                    ✓ {requirement}
+                                    • {requirement}
 
                                 </li>
 
@@ -354,7 +354,7 @@ function ScholarshipCard({ scholarship }) {
 
                         <li>
 
-                            No requirements could be confirmed from the source page.
+                            No other requirements were quoted from the source page.
 
                         </li>
 

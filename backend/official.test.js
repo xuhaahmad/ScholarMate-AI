@@ -2,7 +2,7 @@
 // next-cycle information. No network calls: pages come from a fake fetch.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { OFFICIAL_SOURCES, SUPPORTED_COUNTRIES, officialSourcesFor } from "./officialSources.js";
+import { OFFICIAL_SOURCES, SUPPORTED_COUNTRIES, officialSourcesFor, quotedDegreeLevels } from "./officialSources.js";
 import { classifySource, parseSafeUrl } from "./sources.js";
 import { extractDates, applicationStatus, nextCycle } from "./dates.js";
 import { htmlToText, fetchOfficialPages } from "./pageFetch.js";
@@ -44,7 +44,14 @@ test("official sources: every supported country has official programmes or unive
 test("official sources: stated facts carry quotes and dates match their quotes", () => {
     for (const entry of OFFICIAL_SOURCES) {
         if (entry.degreeLevels?.length) {
-            assert.ok(entry.degreeEvidence?.length > 10, `${entry.id} quotes its degree levels`);
+            // Either a quote that names at least one listed level, or an explicit
+            // null when the official page does not name the levels (unconfirmed).
+            if (entry.degreeEvidence === null) {
+                assert.ok(Object.hasOwn(entry, "degreeEvidence"), `${entry.id} marks its degree levels as unconfirmed`);
+            } else {
+                assert.ok(entry.degreeEvidence?.length > 10, `${entry.id} quotes its degree levels`);
+                assert.ok(quotedDegreeLevels(entry).length > 0, `${entry.id}: the degree quote names at least one listed level`);
+            }
         }
 
         for (const fact of [entry.nationality, entry.funding, entry.howToApply]) {
@@ -61,6 +68,27 @@ test("official sources: stated facts carry quotes and dates match their quotes",
             assert.ok(entry.cycle.evidence?.length > 10, `${entry.id} cycle has a quote`);
         }
     }
+});
+
+test("official sources: a degree level is confirmed only when its quote names it", () => {
+    const named = {
+        bachelor: /bachelor|undergraduate|first-entry|first-time university/i,
+        master: /master|graduate/i,
+        phd: /ph\.?\s?d|doctora|postgraduate|graduate (degree|research)|research degree/i
+    };
+
+    for (const entry of OFFICIAL_SOURCES.filter((item) => item.degreeLevels?.length)) {
+        for (const level of quotedDegreeLevels(entry)) {
+            assert.match(entry.degreeEvidence, named[level], `${entry.id}: "${level}" is named in its quote`);
+        }
+    }
+
+    const byId = (id) => OFFICIAL_SOURCES.find((entry) => entry.id === id);
+    assert.equal(byId("boell-foundation").degreeEvidence, "International students who have completed their first degree abroad can apply prior to starting a Master's degree program in Germany");
+    assert.deepEqual(quotedDegreeLevels(byId("boell-foundation")), ["master"]);
+    assert.deepEqual(quotedDegreeLevels(byId("deutschlandstipendium")), [], "the checked page does not name degree levels");
+    assert.deepEqual(quotedDegreeLevels(byId("daad-scholarships")), ["phd"], "'graduates' alone does not confirm a Master's");
+    assert.deepEqual(quotedDegreeLevels(byId("chevening")), ["master"]);
 });
 
 test("official sources: selection by country and degree", () => {
@@ -323,6 +351,171 @@ test("pipeline: a third-party copy of an official programme merges into the offi
     assert.ok(pearsons[0].otherSources.some((source) => source.url === "https://www.scholars4dev.com/canada"));
 });
 
+test("pipeline: Böll's Master's level is confirmed by its quote, other levels are not", async () => {
+    const master = await run({ field: "Physics", degree: "Master", nationality: "Kenyan", destination: "Germany" });
+    const boellMaster = master.result.scholarships.find((item) => item.registryId === "boell-foundation");
+    assert.equal(boellMaster.match.checks.find((item) => item.criterion === "degree").basis, "source");
+    assert.equal(boellMaster.degreeLevel, "Master; Bachelor, PhD (unconfirmed)");
+    assert.ok(boellMaster.evidence.some((item) => item.field === "degree" && /Master's degree program/.test(item.quote)));
+
+    const bachelor = await run({ field: "Physics", degree: "Bachelor", nationality: "Kenyan", destination: "Germany" });
+    const boellBachelor = bachelor.result.scholarships.find((item) => item.registryId === "boell-foundation");
+    assert.equal(boellBachelor.match.checks.find((item) => item.criterion === "degree").basis, "ai");
+    assert.notEqual(boellBachelor.match.level, "verified");
+});
+
+test("pipeline: Böll's policy-change sentence is not an opening date", async () => {
+    const policy = "Note for Master's students: Starting March 1, 2027, we will only accept applications for first-cycle programs.";
+    const page = `<h2>Heinrich Böll Foundation Scholarships</h2><p>Each year, we run two application procedures. The deadlines are 1 March and 1 September.</p><p>${policy}</p>${LONG}`;
+    const live = {
+        sourceId: "S1",
+        name: "Heinrich Böll Foundation Scholarships",
+        openingDate: { date: "2027-03-01", text: "1 March 2027", evidence: "Starting March 1, 2027, we will only accept applications for first-cycle programs" }
+    };
+    const { result } = await run({ field: "Physics", degree: "Master", nationality: "Kenyan", destination: "Germany" }, {
+        ai: fakeAi([live]),
+        fetchImpl: officialFetch({ "boell-foundation": page })
+    });
+    const boell = result.scholarships.find((item) => item.registryId === "boell-foundation");
+
+    assert.equal(boell.officialPage.readLive, true);
+    assert.equal(boell.openingDate, null);
+    assert.equal(boell.applicationStatus, "unknown", "the page gives no year-specific dates");
+    assert.notEqual(boell.nextCycle?.type, "confirmed");
+});
+
+test("pipeline: official pages record whether they were analysed, downloaded, unavailable or not requested", async () => {
+    const { result } = await run(BACHELOR_CANADA, {
+        fetchImpl: async (url) => url === PEARSON.url ? htmlResponse("blocked", 403) : officialFetch()(url),
+        config: { officialPagesMax: 2 }
+    });
+    const pageOf = (id) => result.scholarships.find((item) => item.registryId === id)?.officialPage;
+
+    assert.equal(pageOf("uoft-pearson").liveStatus, "unavailable");
+    assert.equal(pageOf("uoft-pearson").readLive, false);
+    assert.equal(pageOf("mcgill-entrance").liveStatus, "analysed", "downloaded and analysed by the (fake) AI");
+    assert.equal(pageOf("mcgill-entrance").readLive, true);
+
+    const listedOnly = await run({ field: "Engineering", degree: "Master", destination: "France" }, { config: { officialPagesMax: 1 } });
+    const notRead = listedOnly.result.scholarships.filter((item) => item.officialPage && !item.officialPage.readLive);
+    assert.ok(notRead.length > 0);
+    assert.ok(notRead.every((item) => item.officialPage.liveStatus === "not_requested"));
+});
+
+const FRANCE_MASTER = { field: "Engineering", degree: "Master", nationality: "Kenyan", destination: "France" };
+const EIFFEL = OFFICIAL_SOURCES.find((entry) => entry.id === "eiffel");
+
+function eiffelLive(statement) {
+    const page = `<h2>${EIFFEL.name}</h2><p>${statement}</p>${LONG}`;
+    const live = {
+        sourceId: "S1",
+        name: EIFFEL.name,
+        deadline: { date: null, text: "Closed", evidence: statement.split(". ")[0].replace(/\.$/, "") + "." }
+    };
+    return { ai: fakeAi([live]), fetchImpl: officialFetch({ eiffel: page }), config: { officialPagesMax: 1 } };
+}
+
+test("pipeline: a live 'now closed' statement on the official page beats a future stored deadline", async () => {
+    // Control: without the statement, the stored future deadline makes the round OPEN.
+    const control = (await run(FRANCE_MASTER)).result.scholarships.find((item) => item.registryId === "eiffel");
+    assert.equal(control.applicationStatus, "open");
+    assert.ok(Date.parse(`${EIFFEL.knownDates[0].deadlineDate}T00:00:00Z`) > NOW.getTime(), "the stored deadline is in the future");
+
+    const { result } = await run(FRANCE_MASTER, eiffelLive("Applications for the 2027 Eiffel programme have now closed."));
+    const eiffel = result.scholarships.find((item) => item.registryId === "eiffel");
+
+    assert.equal(eiffel.applicationStatus, "closed");
+    assert.equal(eiffel.deadlineDate, null, "the stale stored deadline is not used");
+    assert.equal(eiffel.datesCheckedOn, undefined);
+    assert.equal(eiffel.datesSource, "official_live");
+    assert.equal(eiffel.officialPage.liveStatus, "analysed");
+    assert.notEqual(eiffel.match.level, "not_eligible", "a closed round is not ineligibility");
+    assert.equal(eiffel.match.checks.find((item) => item.criterion === "deadline").hard, false);
+});
+
+test("pipeline: a closure of an older round does not close the current one", async () => {
+    const { result } = await run(FRANCE_MASTER, eiffelLive("Applications for 2025 have closed. Applications for the 2027 programme open on 1 October 2026."));
+    const eiffel = result.scholarships.find((item) => item.registryId === "eiffel");
+
+    assert.notEqual(eiffel.applicationStatus, "closed");
+    assert.equal(eiffel.applicationStatus, "open", "the stored current-round deadline still applies");
+});
+
+test("pipeline: a page that was downloaded but not analysed is not reported as analysed", async () => {
+    const { result } = await run(BACHELOR_CANADA, { ai: fakeAi([], { fail: true }) });
+    const pearson = result.scholarships.find((item) => item.registryId === "uoft-pearson");
+
+    assert.equal(pearson.officialPage.readLive, true, "the page was downloaded");
+    assert.equal(pearson.officialPage.liveStatus, "downloaded");
+    assert.equal(pearson.datesSource, "official_stored");
+    assert.equal(pearson.datesCheckedOn, PEARSON.checkedOn);
+
+    // Analysed even when the AI found nothing on the page.
+    const analysed = await run(BACHELOR_CANADA, { ai: fakeAi([]) });
+    assert.equal(analysed.result.scholarships.find((item) => item.registryId === "uoft-pearson").officialPage.liveStatus, "analysed");
+});
+
+test("pipeline: dates from a third-party copy never become an official programme's dates", async () => {
+    const blog = { title: "Top Canadian scholarships", url: "https://www.scholars4dev.com/canada", content: `Lester B. Pearson International Student Scholarships at the University of Toronto. Application deadline: 30 January 2027. ${"More scholarship information. ".repeat(10)}`, score: 0.9 };
+    const fromBlog = {
+        sourceId: "S6",
+        name: "Lester B. Pearson International Student Scholarships",
+        deadline: { date: "2027-01-30", text: "30 January 2027", evidence: "Application deadline: 30 January 2027" },
+        summary: "From a blog.",
+        assessment: { status: "unclear", reason: "x" }
+    };
+    const { result } = await run(BACHELOR_CANADA, { search: fakeSearch([blog]), ai: fakeAi([fromBlog]) });
+    const pearson = result.scholarships.find((item) => /Pearson/.test(item.name));
+
+    assert.equal(pearson.registryId, "uoft-pearson");
+    assert.equal(pearson.deadlineDate, PEARSON.knownDates[0].deadlineDate, "official stored date, not the blog's");
+    assert.equal(pearson.datesSource, "official_stored");
+    assert.ok(pearson.otherSources.some((source) => source.url === blog.url), "the blog is only a reference");
+
+    // On its own, a third-party result is labelled as such.
+    const { result: webOnly } = await run({ field: "Economics", degree: "Bachelor", nationality: "Nigerian", destination: "Netherlands" }, {
+        search: fakeSearch([{ ...blog, url: "https://www.scholars4dev.com/netherlands", content: blog.content.replace(/Lester B\. Pearson International Student Scholarships at the University of Toronto/, "Holland Excellence Scholarship") }]),
+        ai: fakeAi([{ ...fromBlog, sourceId: "S1", name: "Holland Excellence Scholarship" }])
+    });
+    const holland = webOnly.scholarships.find((item) => item.name === "Holland Excellence Scholarship");
+    assert.equal(holland.datesSource, "third_party_source");
+});
+
+test("pipeline: a quote that mentions Master's and PhD does not rule out a Bachelor's student; 'only' does", async () => {
+    // The official list is filtered by degree level, so this matters for web results.
+    const levelsFor = async (sentence) => {
+        const page = {
+            title: "Graduate funding",
+            url: "https://www.example.edu/funding",
+            content: `Example Graduate Fellowship. ${sentence} Applicants from all countries may apply. ${"More scholarship information. ".repeat(10)}`,
+            score: 0.9
+        };
+        const item = {
+            sourceId: "S1",
+            name: "Example Graduate Fellowship",
+            degreeLevels: ["master", "phd"],
+            degreeEvidence: sentence.replace(/\.$/, ""),
+            nationality: { type: "any", countries: [], evidence: "Applicants from all countries may apply" },
+            summary: "x",
+            assessment: { status: "unclear", reason: "y" }
+        };
+        const { result } = await run({ field: "Physics", degree: "Bachelor", nationality: "Kenyan", destination: "Netherlands" }, {
+            search: fakeSearch([page]),
+            ai: fakeAi([item])
+        });
+        return result.scholarships.find((entry) => entry.name === "Example Graduate Fellowship");
+    };
+
+    const mentions = await levelsFor("The fellowship supports Master's and PhD students.");
+    assert.equal(mentions.sourceType, "university");
+    assert.equal(mentions.match.checks.find((item) => item.criterion === "degree").basis, "ai");
+    assert.equal(mentions.match.level, "preliminary");
+
+    const only = await levelsFor("The fellowship is open only to Master's and PhD students.");
+    assert.equal(only.match.checks.find((item) => item.criterion === "degree").basis, "source");
+    assert.equal(only.match.level, "not_eligible");
+});
+
 test("pipeline: results that are not named like scholarships are dropped", async () => {
     const page = { title: "Admissions", url: "https://www.example.org/admissions", content: `Admissions Office of Example University. ${"General scholarship and admissions information. ".repeat(10)}`, score: 0.9 };
     const items = [{ sourceId: "S1", name: "Admissions Office" }, { sourceId: "S1", name: "Example University" }];
@@ -353,7 +546,12 @@ test("pipeline: confirmed eligibility only from official quotes; others stay pre
     const deutschland = result.scholarships.find((item) => item.registryId === "deutschlandstipendium");
     const daad = result.scholarships.find((item) => item.registryId === "daad-scholarships");
 
-    assert.equal(deutschland.match.level, "verified", "degree and 'all nationalities' are quoted on the official page");
+    // The checked Deutschlandstipendium page quotes "all nationalities" but does not
+    // name degree levels, so the Master's level is not confirmed by the source.
+    assert.equal(deutschland.match.level, "preliminary");
+    assert.equal(deutschland.match.checks.find((item) => item.criterion === "degree").basis, "ai");
+    assert.equal(deutschland.degreeLevel, "Bachelor, Master (unconfirmed)");
+    assert.ok(!deutschland.evidence.some((item) => item.field === "degree"), "no degree quote is shown as evidence");
     assert.equal(daad.match.level, "preliminary", "nationality rules are not stated, so not confirmed");
     assert.equal(JSON.stringify(result).includes("%\""), false, "no percentage scores");
 });

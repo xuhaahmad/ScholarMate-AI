@@ -32,7 +32,8 @@ export const OFFICIAL_SOURCES = [
         provider: "German Federal Government and private sponsors",
         url: "https://www.deutschlandstipendium.de/deutschlandstipendium/de/services/english/english_node.html",
         degreeLevels: ["bachelor", "master"],
-        degreeEvidence: "The Deutschlandstipendium programme supports talented and high-achieving students at public and state-recognised universities in Germany.",
+        // The checked English page does not name degree levels, so they stay unconfirmed.
+        degreeEvidence: null,
         nationality: { type: "any", evidence: "First- and higher-semester students of all nationalities can apply directly to their university." },
         funding: { text: "300 euros per month", evidence: "300 euros per month for international top-class talent" }
     },
@@ -41,7 +42,7 @@ export const OFFICIAL_SOURCES = [
         name: "Heinrich Böll Foundation Scholarships", provider: "Heinrich Böll Foundation",
         url: "https://www.boell.de/en/applying-scholarship",
         degreeLevels: ["bachelor", "master", "phd"],
-        degreeEvidence: "The Heinrich Böll Foundation's Scholarship Program awards undergraduate and doctoral scholarships to German and international students and doctoral candidates.",
+        degreeEvidence: "International students who have completed their first degree abroad can apply prior to starting a Master's degree program in Germany",
         howToApply: { text: "Two application rounds a year, with deadlines on 1 March and 1 September. From 1 March 2027 Master's applications are limited (see the official page).", evidence: "Each year, we run two application procedures. The deadlines are 1 March and 1 September" }
     },
     {
@@ -109,7 +110,8 @@ export const OFFICIAL_SOURCES = [
         id: "harvard-college-aid", kind: "programme", country: "US", fetch: "direct",
         name: "Harvard College need-based financial aid", provider: "Harvard College", institution: "Harvard University",
         url: "https://college.harvard.edu/financial-aid",
-        degreeLevels: ["bachelor"], degreeEvidence: "Financial Aid | Harvard College",
+        // The checked page names no degree level outside its menus, so it stays unconfirmed.
+        degreeLevels: ["bachelor"], degreeEvidence: null,
         nationality: { type: "any", evidence: "which apply to all students, regardless of country of residence or citizenship status" }
     },
     {
@@ -312,6 +314,19 @@ export const OFFICIAL_SOURCES = [
         url: "https://iro.sabanciuniv.edu/en/scholarships"
     }
 ].map((entry) => ({ checkedOn: CHECKED, ...entry }));
+
+// Wording that explicitly names each degree level. A listed level only counts as
+// confirmed by the official page when its quote ("degreeEvidence") names it.
+const DEGREE_WORDING = {
+    bachelor: /\bbachelor|\bundergraduate|\bfirst-entry\b|first-time university students/i,
+    master: /\bmaster|\bpostgraduate\b|\bgraduate\b(?!s)/i,
+    phd: /\bph\.?\s?d\b|\bdoctora|\bpostgraduate\b|\bgraduate (degree|research)\b|\bresearch degree/i
+};
+
+export function quotedDegreeLevels(entry) {
+    const quote = typeof entry?.degreeEvidence === "string" ? entry.degreeEvidence : "";
+    return (entry?.degreeLevels ?? []).filter((level) => DEGREE_WORDING[level]?.test(quote));
+}
 
 export const SUPPORTED_COUNTRIES = ["DE", "GB", "US", "AU", "CA", "KR", "JP", "FR", "IT", "TR"];
 

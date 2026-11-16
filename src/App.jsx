@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
 import Profile from "./pages/Profile";
@@ -69,6 +69,9 @@ function AnimatedRoutes() {
                     }
                 />
                 <Route path="/about" element={<About />} />
+
+                {/* Unknown addresses go to the home page instead of rendering nothing. */}
+                <Route path="*" element={<Navigate to="/" replace />} />
 
             </Routes>
 

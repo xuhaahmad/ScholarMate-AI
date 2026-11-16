@@ -113,6 +113,19 @@ export function countryName(code) {
     return PREFERRED_NAMES[code] ?? COUNTRY_NAMES.get(code) ?? null;
 }
 
+// Country-code domains that reliably show where an official institution is.
+// Generic domains (.edu, .org, .com, ...) never imply a country.
+const COUNTRY_DOMAINS = { nz: "NZ", uk: "GB", au: "AU", ca: "CA", jp: "JP", kr: "KR", fr: "FR", de: "DE", it: "IT", tr: "TR" };
+
+export function countryFromDomain(url) {
+    try {
+        const hostname = new URL(url).hostname.toLowerCase();
+        return COUNTRY_DOMAINS[hostname.split(".").pop()] ?? null;
+    } catch {
+        return null;
+    }
+}
+
 // Returns the ISO code for a country name, alias or nationality (demonym), or null.
 export function resolveCountry(value) {
     const key = normalizeKey(value).replace(/\.$/, "");
@@ -235,4 +248,31 @@ export function resolveDestination(value) {
 
 export function allOfficialProgrammeDomains() {
     return Object.values(DESTINATIONS).flatMap((destination) => destination.officialDomains);
+}
+
+// Countries (ISO codes) named in a piece of text, by name, alias or nationality
+// ("citizens of Kenya", "Ghanaian applicants"). Only capitalised words are
+// considered, so ordinary words ("contact us") are not read as countries.
+export function countriesMentioned(text) {
+    const words = String(text ?? "")
+        .split(/[\s,;:()[\]/"“”‘’]+/)
+        .map((word) => word.replace(/[.!?]+$/, "").replace(/['’]s$/, ""))
+        .filter(Boolean);
+    const found = new Set();
+
+    for (let start = 0; start < words.length; start++) {
+        if (!/^\p{Lu}/u.test(words[start])) continue;
+
+        for (let length = Math.min(4, words.length - start); length >= 1; length--) {
+            const code = resolveCountry(words.slice(start, start + length).join(" "));
+
+            if (code) {
+                found.add(code);
+                start += length - 1;
+                break;
+            }
+        }
+    }
+
+    return found;
 }

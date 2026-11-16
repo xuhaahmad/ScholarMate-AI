@@ -186,6 +186,8 @@ Before deploying:
 - On smaller Groq plans, searches made less than a minute apart can hit Groq's per-minute token limit; the app then shows a "busy" message or partial results.
 - Many university websites outside the recognised domain patterns are shown as "Unverified source" even when they are official.
 - Nationality rules that refer to groups (for example "developing countries" or "Commonwealth countries") cannot be checked automatically and are left as "not confirmed".
+- Date, closure and eligibility checks read the wording of quoted sentences. Unusual wording is left as "not confirmed" rather than guessed, so some real opening dates or restrictions are missed.
+- When one page lists several scholarships, statements are linked to a scholarship by its name, compared loosely (for example "Excellence Scholarship" also matches "Vice-Chancellor's Excellence Scholarship"). An opening of a similarly named scholarship can then hide that another round has closed (its status falls back to "Unknown"); it never creates a confirmed opening date.
 - Rate limits, caches and budgets are per server instance (see Security).
 
 ## 📸 Screenshots

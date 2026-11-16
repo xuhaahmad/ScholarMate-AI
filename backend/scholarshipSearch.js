@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
 import { planSearch, normalizeDegree } from "./searchPlan.js";
 import { classifySource, parseSafeUrl, pageKey, siteKey, baseDomain, SOURCE_TYPES } from "./sources.js";
-import { applicationStatus, normalizeForMatch, quoteInSource, unwrapQuote, verifiedDate, DATE_CONTEXT, STATUS_LABELS, nextCycle, formatIsoDate } from "./dates.js";
-import { officialSourcesFor, SUPPORTED_COUNTRIES } from "./officialSources.js";
+import { applicationStatus, normalizeForMatch, quoteInSource, unwrapQuote, verifiedDate, closedRoundIsCurrent, DATE_CONTEXT, STATUS_LABELS, nextCycle, formatIsoDate } from "./dates.js";
+import { officialSourcesFor, quotedDegreeLevels, SUPPORTED_COUNTRIES } from "./officialSources.js";
 import { fetchOfficialPages } from "./pageFetch.js";
 import { matchScholarship, rankScholarship } from "./matching.js";
-import { resolveCountry, countryName } from "./countries.js";
+import { resolveCountry, countryName, countryFromDomain } from "./countries.js";
 
 export { isOfficialSource } from "./sources.js";
 
@@ -427,6 +427,8 @@ async function analyzeBatches({ profile, selected, aiClient, config, logger }) {
     const failures = [];
     let analyzedSources = 0;
     let invalidResponses = 0;
+    // Pages the AI actually analysed (also when it found no scholarships on them).
+    const analyzedIds = new Set();
 
     // Batches run one after another: Groq is fast, and sequential calls stay
     // within per-minute token limits more easily than parallel ones.
@@ -472,6 +474,7 @@ async function analyzeBatches({ profile, selected, aiClient, config, logger }) {
             if (recovered && Array.isArray(recovered.scholarships)) {
                 logger.error("Groq JSON validation failed; using the recovered answer.");
                 analyzedSources += batch.length;
+                for (const page of batch) analyzedIds.add(page.id);
 
                 for (const item of recovered.scholarships) {
                     items.push({ item, batch });
@@ -504,13 +507,14 @@ async function analyzeBatches({ profile, selected, aiClient, config, logger }) {
         }
 
         analyzedSources += batch.length;
+        for (const page of batch) analyzedIds.add(page.id);
 
         for (const item of parsed.scholarships) {
             items.push({ item, batch });
         }
     }
 
-    return { batches: batches.length, items, usage, failures, analyzedSources, invalidResponses };
+    return { batches: batches.length, items, usage, failures, analyzedSources, analyzedIds, invalidResponses };
 }
 
 // ---------------------------------------------------------------------------
@@ -668,7 +672,9 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
     const country = countryText && (nameIsGrounded(countryText, source.normalizedText) ||
         (countryCode && nameIsGrounded(countryName(countryCode), source.normalizedText)))
         ? (countryCode ? countryName(countryCode) : countryText)
-        : null;
+        // Official sites on a country-code domain (e.g. auckland.ac.nz) show
+        // the country when the AI gave no grounded one; generic domains are never guessed.
+        : source.classification.official ? countryName(countryFromDomain(source.url)) : null;
 
     // Dates: only accepted when the quoted source text states the full date.
     const openingDate = verifiedDate(raw.openingDate, source.normalizedText, DATE_CONTEXT.opening);
@@ -679,7 +685,13 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
     if (openingDate) addEvidence("openingDate", raw.openingDate?.evidence);
 
     const timeZone = (registryMatch ?? source.registryEntries?.[0])?.timezone;
-    const status = applicationStatus({ openingDate, deadlineDate, timeZone }, now);
+    // Without a dated deadline, an official statement that the current round has
+    // closed ("Applications for 2026-2027 have now closed.") still sets the status.
+    // Statements about an older round, or on a page that announces a newer round,
+    // do not (see closedRoundIsCurrent).
+    const closedStatement = !deadlineDate && deadlineQuoteVerified &&
+        source.classification.official && closedRoundIsCurrent(raw.deadline?.evidence, source.text, now, name);
+    const status = closedStatement ? "closed" : applicationStatus({ openingDate, deadlineDate, timeZone }, now);
     const deadlineText = deadlineDate
         ? formatDate(deadlineDate)
         : deadlineQuoteVerified
@@ -751,6 +763,11 @@ function normalizeItem(raw, batch, profile, now, retrievedSites) {
             fields: inSource(raw.fieldsEvidence)
         },
         registryEntryId: registryMatch?.id ?? null,
+        closedByStatement: Boolean(closedStatement),
+        // Where the dates (or the closed status) come from: the page this result was read from.
+        datesSource: deadlineDate || openingDate || closedStatement
+            ? (sourceClassification.official ? "official_source" : "third_party_source")
+            : null,
         description: cleanText(raw.summary, 400) ?? NOT_SPECIFIED,
         descriptionSource: "ai_summary",
         aiAssessment: {
@@ -929,7 +946,7 @@ function blankScholarship(entry) {
 
 // A curated programme as a result: checked facts from the official page,
 // live details (when the AI read the page) and dates from the last check.
-function registryScholarship({ entry, page, live, profile, now }) {
+function registryScholarship({ entry, page, live, liveRequested, liveAnalysed, profile, now }) {
     const scholarship = live
         ? { ...live, evidence: [...live.evidence], otherSources: [...live.otherSources] }
         : blankScholarship(entry);
@@ -951,14 +968,27 @@ function registryScholarship({ entry, page, live, profile, now }) {
         url: entry.url,
         checkedOn: entry.checkedOn,
         readLive: Boolean(page),
+        // "analysed": downloaded and analysed by the AI during this search;
+        // "downloaded": downloaded, but the AI did not analyse it (failed or skipped);
+        // "unavailable": the page could not be read; "not_requested": not read this
+        // time (only a few pages are read per search).
+        liveStatus: page ? (liveAnalysed ? "analysed" : "downloaded") : liveRequested ? "unavailable" : "not_requested",
         method: page?.method ?? null
     };
 
     if (entry.degreeLevels?.length) {
+        // A level is confirmed only when the official quote names it.
+        const quoted = quotedDegreeLevels(entry);
+        const wanted = normalizeDegree(profile.degree);
+        const confirmed = wanted && entry.degreeLevels.includes(wanted)
+            ? quoted.includes(wanted)
+            : quoted.length > 0 && quoted.length === entry.degreeLevels.length;
+
         scholarship.degreeLevels = entry.degreeLevels;
-        scholarship.evidenceVerified = { ...scholarship.evidenceVerified, degree: true };
+        scholarship.unconfirmedDegreeLevels = entry.degreeLevels.filter((level) => !quoted.includes(level));
+        scholarship.evidenceVerified = { ...scholarship.evidenceVerified, degree: confirmed };
         scholarship.evidence = scholarship.evidence.filter((item) => item.field !== "degree");
-        scholarship.evidence.push({ field: "degree", quote: entry.degreeEvidence, ...checked });
+        if (quoted.length > 0) scholarship.evidence.push({ field: "degree", quote: entry.degreeEvidence, ...checked });
     }
 
     if (entry.nationality) {
@@ -977,8 +1007,16 @@ function registryScholarship({ entry, page, live, profile, now }) {
         scholarship.evidence.push({ field: "howToApply", quote: entry.howToApply.evidence, ...checked });
     }
 
+    // A live statement on the official page that the current round has closed wins
+    // over dates from the last check (which may still show a future deadline).
+    const closedLive = live?.closedByStatement === true;
+
     // Dates read live win; otherwise use dates from the last check of the page.
-    if (!scholarship.deadlineDate && !scholarship.openingDate) {
+    if (scholarship.deadlineDate || scholarship.openingDate || closedLive) {
+        // `live` is only ever an AI result read from this programme's own official page.
+        scholarship.datesSource = "official_live";
+    } else {
+        scholarship.datesSource = null;
         const degree = normalizeDegree(profile.degree);
         // Dates from the last check are only used for the current round: once a
         // deadline is more than ~9 months old, a new round has probably started.
@@ -990,11 +1028,15 @@ function registryScholarship({ entry, page, live, profile, now }) {
             scholarship.openingDate = known.openingDate ?? null;
             scholarship.deadline = known.deadlineDate ? formatIsoDate(known.deadlineDate) : NOT_SPECIFIED;
             scholarship.datesCheckedOn = entry.checkedOn;
+            scholarship.datesSource = "official_stored";
             scholarship.evidence.push({ field: "deadline", quote: known.evidence, ...checked });
         }
     }
 
-    const status = applicationStatus({ openingDate: scholarship.openingDate, deadlineDate: scholarship.deadlineDate, timeZone: entry.timezone }, now);
+    // A closed round is about timing only; eligibility is matched separately.
+    const status = closedLive
+        ? "closed"
+        : applicationStatus({ openingDate: scholarship.openingDate, deadlineDate: scholarship.deadlineDate, timeZone: entry.timezone }, now);
     scholarship.applicationStatus = status;
     scholarship.applicationStatusLabel = STATUS_LABELS[status];
     scholarship.timeZone = entry.timezone ?? null;
@@ -1007,9 +1049,16 @@ function registryScholarship({ entry, page, live, profile, now }) {
 
     scholarship.university = scholarship.institution ?? NOT_SPECIFIED;
     const degreeLabels = scholarship.degreeLevels.map((level) => DEGREE_LABELS[level]).join(", ");
-    scholarship.degreeLevel = degreeLabels
-        ? (scholarship.evidenceVerified.degree ? degreeLabels : `${degreeLabels} (unconfirmed)`)
-        : NOT_SPECIFIED;
+    const unconfirmed = scholarship.unconfirmedDegreeLevels ?? [];
+    const confirmedLabels = scholarship.degreeLevels.filter((level) => !unconfirmed.includes(level)).map((level) => DEGREE_LABELS[level]).join(", ");
+    const unconfirmedLabels = unconfirmed.map((level) => DEGREE_LABELS[level]).join(", ");
+    scholarship.degreeLevel = !degreeLabels
+        ? NOT_SPECIFIED
+        : confirmedLabels && unconfirmedLabels
+            ? `${confirmedLabels}; ${unconfirmedLabels} (unconfirmed)`
+            : unconfirmedLabels || !scholarship.evidenceVerified.degree
+                ? `${degreeLabels} (unconfirmed)`
+                : degreeLabels;
     scholarship.eligibility = scholarship.eligibility ?? [];
     scholarship.explanation = scholarship.aiAssessment?.reason ?? NOT_SPECIFIED;
 
@@ -1143,7 +1192,7 @@ export async function searchScholarships({ profile, searchClient, aiClient, conf
         coverage.notes.push(`${official.failed.length} official page(s) could not be read right now; their details are shown from the last check and should be confirmed on the official website.`);
     }
 
-    let analysis = { items: [], usage: { requests: 0, inputTokens: 0, outputTokens: 0 }, failures: [], analyzedSources: 0, invalidResponses: 0 };
+    let analysis = { items: [], usage: { requests: 0, inputTokens: 0, outputTokens: 0 }, failures: [], analyzedSources: 0, analyzedIds: new Set(), invalidResponses: 0 };
 
     if (selected.length > 0) {
         analysis = await analyzeBatches({ profile, selected, aiClient, config, logger });
@@ -1202,13 +1251,20 @@ export async function searchScholarships({ profile, searchClient, aiClient, conf
         entries.push({ scholarship, dedupeKey: key });
     }
 
+    // Official pages the AI actually analysed (downloaded is not the same as analysed).
+    const analyzedPageKeys = new Set(selected.filter((page) => analysis.analyzedIds.has(page.id)).map((page) => page.key));
+    const wasAnalysed = (url) => {
+        const parsed = parseSafeUrl(url);
+        return Boolean(parsed) && analyzedPageKeys.has(pageKey(parsed));
+    };
+
     // Every curated programme is shown, enriched by what the AI read live.
     for (const entry of programmes) {
         const index = entries.findIndex(({ scholarship }) => scholarship.registryEntryId === entry.id);
         const live = index >= 0 ? entries.splice(index, 1)[0].scholarship : null;
 
         entries.push({
-            scholarship: registryScholarship({ entry, page: official.pages.get(entry.url), live, profile, now }),
+            scholarship: registryScholarship({ entry, page: official.pages.get(entry.url), live, liveRequested: liveUrls.has(entry.url), liveAnalysed: wasAnalysed(entry.url), profile, now }),
             dedupeKey: dedupeKey(entry.name)
         });
     }

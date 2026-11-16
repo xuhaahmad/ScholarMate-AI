@@ -61,6 +61,69 @@ export function formatDate(iso) {
     return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+const LIVE_STATUSES = ["analysed", "downloaded", "unavailable", "not_requested"];
+
+// What happened to the official page during this search, for the date note.
+const PAGE_STATES = {
+    analysed: "the page was analysed during this search, but no current dates were found on it",
+    downloaded: "the page was downloaded during this search but could not be analysed",
+    unavailable: "the page could not be read during this search",
+    not_requested: "the page was not re-read during this search"
+};
+
+// Where the dates on the details page come from. Never claims the official page
+// was analysed unless the backend says so, and never presents dates from a
+// third-party website as official.
+export function datesSourceNote(scholarship) {
+    const page = scholarship?.officialPage;
+    // Older results only had readLive (downloaded, analysis unknown): never
+    // treat that as analysed.
+    const live = LIVE_STATUSES.includes(page?.liveStatus)
+        ? page.liveStatus
+        : page ? (page.readLive ? "downloaded" : "not_requested") : null;
+    const hasDates = Boolean(formatDate(scholarship?.deadlineDate) || formatDate(scholarship?.openingDate));
+    const storedOn = formatDate(scholarship?.datesCheckedOn);
+    const linkCheckedOn = formatDate(page?.checkedOn);
+    const thirdParty = scholarship?.datesSource === "third_party_source" ||
+        (!page && !scholarship?.datesSource && !isOfficialSourceType(scholarship?.sourceType));
+
+    if (hasDates && thirdParty) {
+        return "Dates supplied by a third-party website found in this search, not by the official page. Confirm them on the official website.";
+    }
+
+    if (page) {
+        if (storedOn) {
+            return `Dates taken from the official page as checked on ${storedOn}; ${PAGE_STATES[live]}.`;
+        }
+
+        if (live === "analysed") {
+            if (hasDates) return "Dates read from the official page during this search.";
+            if (scholarship?.datesSource === "official_live") return "Application status read from the official page during this search.";
+            return "Official page analysed during this search. No current dates were found on the page.";
+        }
+
+        if (live === "downloaded") {
+            return "Official page downloaded during this search but not analysed, so its current dates could not be checked.";
+        }
+
+        if (live === "unavailable") {
+            return linkCheckedOn
+                ? `The official page could not be read during this search (link checked on ${linkCheckedOn}).`
+                : "The official page could not be read during this search.";
+        }
+
+        return linkCheckedOn
+            ? `Official page link checked on ${linkCheckedOn}; the page was not read during this search.`
+            : "The official page was not read during this search.";
+    }
+
+    if (hasDates) {
+        return "Dates quoted from an official page found in this search.";
+    }
+
+    return null;
+}
+
 // "Confirmed", "Tentative" or "Not announced" information about the next round.
 export function nextCycleInfo(scholarship) {
     const cycle = scholarship?.nextCycle;
